@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mr Biggs — Comment Sentiment Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#F2E8D2;
+    --paper-2:#EADFC4;
+    --crust:#5C3A22;
+    --ink:#2B211B;
+    --oxblood:#7C2E2A;
+    --oxblood-dark:#5E211E;
+    --mustard:#D9A441;
+    --mustard-deep:#B5822B;
+    --board:#243228;
+    --board-2:#1B261E;
+    --cream-text:#F2E8D2;
+
+    --loc:#2C5F8A;
+    --loc-bg:#DCE9F3;
+    --food:#3E7A3B;
+    --food-bg:#E1EFDD;
+    --ppl:#B4631E;
+    --ppl-bg:#F6E4CF;
+    --pos:#6B4C93;
+    --pos-bg:#EAE2F2;
+
+    --pos-sent:#3E7A3B;
+    --neg-sent:#A13E2E;
+    --neu-sent:#5C6670;
+    --mix-sent:#B5822B;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.55;
+  }
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background:var(--board);
+    color:var(--cream-text);
+    padding:64px 0 90px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:-1px;
+    height:34px;
+    background:
+      radial-gradient(circle at 10px 0, transparent 12px, var(--board) 13px) repeat-x;
+    background-size:28px 34px;
+    background-position:0 -17px;
+    background-color:transparent;
+  }
+  .hero .wrap{position:relative;z-index:2;}
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:12px;
+    color:var(--mustard);
+    margin:0 0 18px;
+  }
+  .hero h1{
+    font-family:'Fraunces',serif;
+    font-weight:900;
+    font-size:clamp(34px,5.5vw,58px);
+    line-height:1.04;
+    margin:0 0 18px;
+    max-width:760px;
+  }
+  .hero h1 em{
+    font-style:italic;
+    color:var(--mustard);
+  }
+  .hero p.lede{
+    max-width:600px;
+    font-size:17px;
+    color:#D9CFB8;
+    margin:0 0 34px;
+  }
+  .stat-strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .stat-chip{
+    background:rgba(242,232,210,0.07);
+    border:1px solid rgba(242,232,210,0.18);
+    border-radius:10px;
+    padding:14px 18px;
+    min-width:130px;
+  }
+  .stat-chip .n{
+    font-family:'Space Mono',monospace;
+    font-size:26px;
+    font-weight:700;
+    color:var(--mustard);
+    display:block;
+  }
+  .stat-chip .l{
+    font-size:12.5px;
+    color:#C8BEA6;
+  }
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:56px 0;}
+  .section-head{margin-bottom:32px;}
+  .section-head .tag{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--oxblood);
+    display:block;
+    margin-bottom:8px;
+  }
+  .section-head h2{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(24px,3.4vw,34px);
+    margin:0;
+    color:var(--crust);
+  }
+  .section-head p{
+    max-width:640px;
+    color:#5a4d3d;
+    margin:10px 0 0;
+  }
+
+  /* ---------- LEGEND ---------- */
+  .legend-bar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:6px;
+  }
+  .legend-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    background:#fff;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .dot.loc{background:var(--loc);}
+  .dot.food{background:var(--food);}
+  .dot.ppl{background:var(--ppl);}
+  .dot.pos{background:var(--pos);}
+
+  /* ---------- DASHBOARD ---------- */
+  .dash-grid{
+    display:grid;
+    grid-template-columns:1.1fr 1fr;
+    gap:24px;
+  }
+  @media (max-width:760px){ .dash-grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:#fff;
+    border-radius:16px;
+    padding:24px;
+    box-shadow:0 1px 3px rgba(43,33,27,0.08), 0 10px 24px -14px rgba(43,33,27,0.18);
+  }
+  .card h3{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    margin:0 0 4px;
+    color:var(--crust);
+  }
+  .card .sub{
+    font-size:12.5px;
+    color:#8a7c66;
+    margin-bottom:16px;
+  }
+  .chart-holder{position:relative;height:280px;}
+
+  .sent-legend{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;
+  }
+  .sent-legend span{
+    font-size:12.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+
+  /* ---------- FINDINGS GRID ---------- */
+  .findings-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+    margin-top:28px;
+  }
+  @media (max-width:760px){ .findings-grid{grid-template-columns:1fr;} }
+  .finding-card{
+    background:#fff;
+    border-radius:14px;
+    padding:20px 22px;
+    border-left:5px solid var(--mustard-deep);
+    box-shadow:0 1px 2px rgba(43,33,27,0.06);
+  }
+  .finding-card.complaint{border-left-color:var(--oxblood);}
+  .finding-card.compliment{border-left-color:var(--food);}
+  .finding-card h4{
+    margin:0 0 10px;
+    font-family:'Fraunces',serif;
+    font-size:16px;
+    color:var(--crust);
+  }
+  .finding-card ul{margin:0;padding-left:18px;}
+  .finding-card li{margin-bottom:6px;font-size:14.5px;}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .pill{
+    background:var(--paper-2);
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--crust);
+  }
+  .pill .count{
+    font-family:'Space Mono',monospace;
+    color:var(--oxblood);
+    margin-left:5px;
+  }
+
+  /* ---------- VERDICT ---------- */
+  .verdict{
+    background:var(--board-2);
+    color:var(--cream-text);
+    border-radius:20px;
+    padding:40px;
+    margin-top:36px;
+    position:relative;
+  }
+  .verdict .tag{color:var(--mustard);}
+  .verdict h3{
+    font-family:'Fraunces',serif;
+    font-size:26px;
+    margin:6px 0 18px;
+    color:#fff;
+  }
+  .verdict p{color:#D9CFB8;font-size:15.5px;max-width:760px;}
+  .verdict strong{color:var(--mustard);}
+  .verdict-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    margin-top:24px;
+  }
+  @media (max-width:760px){ .verdict-grid{grid-template-columns:1fr;} }
+  .verdict-box{
+    background:rgba(242,232,210,0.06);
+    border:1px solid rgba(242,232,210,0.15);
+    border-radius:12px;
+    padding:18px;
+  }
+  .verdict-box .k{
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--mustard);
+    display:block;
+    margin-bottom:8px;
+  }
+  .verdict-box p{font-size:14px;margin:0;color:#EDE4CF;}
+  .reco{
+    margin-top:26px;
+    background:var(--oxblood);
+    border-radius:14px;
+    padding:20px 24px;
+  }
+  .reco .k{
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;
+    color:#F3D9C9;display:block;margin-bottom:8px;
+  }
+  .reco p{color:#fff;margin:0;font-size:15px;}
+
+  /* ---------- COMMENTS ---------- */
+  .filter-row{
+    display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px;
+  }
+  .filter-btn{
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+    padding:9px 16px;
+    border-radius:999px;
+    border:1.5px solid var(--crust);
+    background:transparent;
+    color:var(--crust);
+    cursor:pointer;
+    transition:.15s;
+  }
+  .filter-btn.active, .filter-btn:hover{
+    background:var(--crust);
+    color:#fff;
+  }
+  .filter-btn .fc{opacity:.65;margin-left:4px;}
+
+  .comment-list{display:flex;flex-direction:column;gap:12px;}
+  .c-card{
+    background:#fff;
+    border-radius:14px;
+    padding:16px 20px;
+    box-shadow:0 1px 2px rgba(43,33,27,0.06);
+    cursor:pointer;
+    transition:box-shadow .15s;
+  }
+  .c-card:hover{box-shadow:0 4px 14px -6px rgba(43,33,27,0.25);}
+  .c-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content:space-between;
+  }
+  .c-head-left{display:flex;align-items:center;gap:12px;min-width:0;}
+  .c-id{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:#a89679;
+    flex-shrink:0;
+  }
+  .c-preview{
+    font-size:14.5px;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .badge{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:5px 10px;
+    border-radius:999px;
+    font-weight:700;
+    flex-shrink:0;
+    color:#fff;
+  }
+  .badge.positive{background:var(--pos-sent);}
+  .badge.negative{background:var(--neg-sent);}
+  .badge.neutral{background:var(--neu-sent);}
+  .badge.mixed{background:var(--mix-sent);}
+  .chev{
+    font-size:14px;color:#a89679;
+    transition:transform .2s;
+    flex-shrink:0;
+  }
+  .c-card.open .chev{transform:rotate(180deg);}
+
+  .c-body{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .c-card.open .c-body{max-height:600px;}
+  .c-body-inner{
+    padding-top:14px;
+    margin-top:14px;
+    border-top:1px dashed #ded1b3;
+  }
+  .c-text{
+    font-size:15.5px;
+    margin-bottom:14px;
+  }
+  .c-meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:22px;
+    font-size:13px;
+  }
+  .c-meta-row .m-label{
+    font-family:'Space Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#a89679;
+    display:block;
+    margin-bottom:6px;
+  }
+  .topic-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .topic-tag{
+    background:var(--paper-2);
+    border-radius:6px;
+    padding:3px 9px;
+    font-size:12.5px;
+    color:var(--crust);
+  }
+  .emo-tag{
+    font-weight:700;
+    color:var(--crust);
+  }
+
+  .loc-t{background:var(--loc-bg);color:var(--loc);padding:1px 5px;border-radius:4px;font-weight:600;}
+  .food-t{background:var(--food-bg);color:var(--food);padding:1px 5px;border-radius:4px;font-weight:600;}
+  .ppl-t{background:var(--ppl-bg);color:var(--ppl);padding:1px 5px;border-radius:4px;font-weight:600;}
+  .pos-t{background:var(--pos-bg);color:var(--pos);padding:1px 5px;border-radius:4px;font-style:italic;}
+
+  footer{
+    padding:36px 0 60px;
+    text-align:center;
+    color:#8a7c66;
+    font-size:13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Sentiment Report · 04 Jul 2026</span>
+    <h1>What Nigerians (and the diaspora) really say about <em>Mr Biggs</em></h1>
+    <p class="lede">A comment-by-comment read of 57 public posts about the fallen fast-food giant — sentiment, emotion, topics and entities tagged, then rolled up into one verdict.</p>
+    <div class="stat-strip">
+      <div class="stat-chip"><span class="n">57</span><span class="l">comments analyzed</span></div>
+      <div class="stat-chip"><span class="n">58%</span><span class="l">positive / nostalgic</span></div>
+      <div class="stat-chip"><span class="n">#1</span><span class="l">emotion: nostalgia</span></div>
+      <div class="stat-chip"><span class="n">meat pie</span><span class="l">most-mentioned product</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="legend">
+    <div class="section-head">
+      <span class="tag">Reading key</span>
+      <h2>Color legend</h2>
+      <p>Entities are tagged inline throughout every comment below. Sentiment-carrying words are marked in purple.</p>
+    </div>
+    <div class="legend-bar">
+      <span class="legend-chip"><span class="dot loc"></span>Location</span>
+      <span class="legend-chip"><span class="dot food"></span>Food / product</span>
+      <span class="legend-chip"><span class="dot ppl"></span>People / brand</span>
+      <span class="legend-chip"><span class="dot pos"></span>Key sentiment word (POS)</span>
+    </div>
+  </section>
+
+  <section id="dashboard">
+    <div class="section-head">
+      <span class="tag">Overview</span>
+      <h2>Sentiment &amp; emotion, at a glance</h2>
+    </div>
+    <div class="dash-grid">
+      <div class="card">
+        <h3>Overall sentiment</h3>
+        <div class="sub">Across all 57 comments</div>
+        <div class="chart-holder"><canvas id="sentimentChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Dominant emotions</h3>
+        <div class="sub">Grouped from 15+ tagged emotions</div>
+        <div class="chart-holder"><canvas id="emotionChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="findings">
+    <div class="section-head">
+      <span class="tag">Deep dive</span>
+      <h2>Topics, products &amp; places</h2>
+      <p>What people actually talked about, and where they talked about it from.</p>
+    </div>
+
+    <div class="findings-grid">
+      <div class="finding-card">
+        <h4>Most discussed topics</h4>
+        <div class="pill-row">
+          <span class="pill">Meat pie nostalgia<span class="count">24</span></span>
+          <span class="pill">Franchise / quality decline<span class="count">9</span></span>
+          <span class="pill">Childhood memories<span class="count">14</span></span>
+          <span class="pill">Brand revival hope<span class="count">10</span></span>
+          <span class="pill">Competitor comparisons<span class="count">7</span></span>
+          <span class="pill">Where-are-you-now confusion<span class="count">5</span></span>
+        </div>
+      </div>
+      <div class="finding-card">
+        <h4>Frequently mentioned products</h4>
+        <div class="pill-row">
+          <span class="pill">Meat pie<span class="count">24</span></span>
+          <span class="pill">Scotch egg<span class="count">3</span></span>
+          <span class="pill">Fried rice<span class="count">3</span></span>
+          <span class="pill">Spaghetti<span class="count">1</span></span>
+          <span class="pill">Ice cream<span class="count">2</span></span>
+          <span class="pill">Spicy chicken<span class="count">1</span></span>
+          <span class="pill">Potato / carrot / cabbage pie<span class="count">2</span></span>
+        </div>
+      </div>
+      <div class="finding-card">
+        <h4>Locations mentioned</h4>
+        <div class="pill-row">
+          <span class="pill">Lagos<span class="count">2</span></span>
+          <span class="pill">Abuja<span class="count">1</span></span>
+          <span class="pill">Nigeria (general)<span class="count">4</span></span>
+          <span class="pill">Ghana<span class="count">1</span></span>
+          <span class="pill">Jos, Kaduna, Zaria<span class="count">1</span></span>
+        </div>
+      </div>
+      <div class="finding-card complaint">
+        <h4>Top complaints</h4>
+        <ul>
+          <li>Franchising wrecked consistency — "any Mr Biggs" used to taste the same, then quality became a lottery</li>
+          <li>Stale or rotten fried rice, hot sour salad and meatless pies at some outlets</li>
+          <li>Poor staff hospitality, described as taking out "personal problems" on customers</li>
+          <li>Modern pies (potato, carrot, cabbage) seen as a downgrade from the original meat pie</li>
+          <li>Long stretches of brand inactivity with no explanation</li>
+        </ul>
+      </div>
+      <div class="finding-card compliment">
+        <h4>Top compliments</h4>
+        <ul>
+          <li>The meat pie is repeatedly called unmatched — "the goat," "legendary," "nobody has beaten that record"</li>
+          <li>Distinct crunch, aroma and a "unique brownish colour" people still remember</li>
+          <li>Generous size and quantity versus competitors</li>
+          <li>Scotch egg, fried rice and spaghetti also get warm, unprompted praise</li>
+          <li>Strong, positive childhood association across multiple countries (Nigeria + Ghana)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="tag eyebrow" style="margin-bottom:6px;">The verdict</span>
+      <h3>Customers love the memory of Mr Biggs — and are frustrated it's gone</h3>
+      <p>Overall sentiment leans <strong>positive</strong> (33 of 57 comments), with a further 7 mixed and 8 neutral, against 9 clearly negative. But raw positivity isn't the full story: almost every positive comment is framed in the <strong>past tense</strong> — "was," "used to," "back then." People aren't praising a brand they patronize today; they're mourning one they loved.</p>
+
+      <div class="verdict-grid">
+        <div class="verdict-box">
+          <span class="k">Single best-fit emotion</span>
+          <p><strong>Nostalgia.</strong> It's the thread running under praise ("legendary meat pie"), grief ("it was the very place 💔") and even the complaints (franchising "destroyed" what people used to love). No other emotion touches this many comments.</p>
+        </div>
+        <div class="verdict-box">
+          <span class="k">Are customers happy?</span>
+          <p>Not with the brand's <em>current state</em> — several openly ask if it's shut down or been sold. But they remain emotionally loyal to what it <em>was</em>, which is a rare, reusable asset few relaunches get for free.</p>
+        </div>
+        <div class="verdict-box">
+          <span class="k">Where sentiment sours</span>
+          <p>Every negative comment ties back to one cause: <strong>inconsistent quality after franchising</strong> — not price, not taste memory, not competitors.</p>
+        </div>
+      </div>
+
+      <div class="reco">
+        <span class="k">One actionable recommendation</span>
+        <p>Relaunch around the original meat pie recipe with a centralized, audited supply chain (standardized meat filling, pastry dough, and frying oil sourced from one certified kitchen per region) rather than loosely licensed franchises — then market the comeback explicitly as "the original recipe, finally consistent again," directly answering the quality complaint while cashing in on the nostalgia that's already there for free.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="comments">
+    <div class="section-head">
+      <span class="tag">Full breakdown</span>
+      <h2>All 57 comments, tagged individually</h2>
+      <p>Tap a comment to expand its sentiment, emotion, topics and highlighted entities.</p>
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+    <div class="comment-list" id="commentList"></div>
+  </section>
+
+</div>
+
+<footer>Mr Biggs Sentiment Report · Sentiment, emotion and topic tags are AI-generated interpretations of public comments, not verified survey data.</footer>
+
+<script>
+const DATA = [
+{id:1, sentiment:"neutral", emotion:"Analytical detachment", topics:["business strategy","franchising","competition","brand loyalty"],
+ text:`<span class="ppl-t">Mr Biggs</span> was <span class="pos-t">brought down</span> by the franchise system, which failed to maintain standards, coupled with <span class="loc-t">Nigeria</span>'s economic decline. Corporate strategy mattered too — for years the brand ran a stability strategy while the market kept moving, losing competitive advantage to substitutes and competitors until sales, market share and profits all declined, forcing a retrenchment it never recovered from.`},
+
+{id:2, sentiment:"positive", emotion:"Nostalgia", topics:["brand confusion","nostalgia"],
+ text:`It's <span class="ppl-t">Chicken Republic</span> and I am there right now. It <span class="pos-t">brings memories</span> 😂😄😂`},
+
+{id:3, sentiment:"neutral", emotion:"Melancholy", topics:["aging","time passing"],
+ text:`Getting old can be tough. We get weaker, forget things, and every day <span class="pos-t">reminds</span> us that time's flying by every second 🌀🌸`},
+
+{id:4, sentiment:"neutral", emotion:"Nostalgia (implied)", topics:["brand mention"],
+ text:`<span class="ppl-t">Mr Biggs</span>`},
+
+{id:5, sentiment:"mixed", emotion:"Pride", topics:["meat pie quality","comparison"],
+ text:`There are none — <span class="ppl-t">Mr Biggs</span> had <span class="pos-t">quality</span> <span class="food-t">meat pie</span> filled with meat, big size and quantity. Others are just small, <span class="pos-t">glorified</span> <span class="food-t">potato pies</span>.`},
+
+{id:6, sentiment:"positive", emotion:"Longing", topics:["saving up","meat pie"],
+ text:`Omo prime <span class="ppl-t">Mr Biggs</span> oh, that we saved to go get their <span class="food-t">meat pie</span> and <span class="food-t">Sprite</span>.`},
+
+{id:7, sentiment:"negative", emotion:"Disappointment", topics:["meat pie quality","overrated"],
+ text:`Seriously there's <span class="pos-t">nothing spectacular</span> about <span class="ppl-t">Mr Biggs</span>' <span class="food-t">meat pies</span>, I honestly have eaten better meat pies.`},
+
+{id:8, sentiment:"positive", emotion:"Defensive pride", topics:["meat pie quality","competitor comparison"],
+ text:`What nostalgia. Their <span class="food-t">meat pie</span> was <span class="pos-t">good</span> — the only restaurant that could contend with them was <span class="ppl-t">Tantalizers</span>. Y'all are saying it wasn't now because they're no more.`},
+
+{id:9, sentiment:"mixed", emotion:"Disappointment", topics:["franchising","brand decline"],
+ text:`<span class="ppl-t">Mr Biggs</span> was the <span class="pos-t">best</span> before they started to franchise their name to anyone who could pay.`},
+
+{id:10, sentiment:"positive", emotion:"Longing", topics:["meat pie","taste"],
+ text:`Their <span class="food-t">meat pie</span> was <span class="pos-t">big and sweet</span> 😋 I <span class="pos-t">miss</span> them ooo, who knows if they are the <span class="ppl-t">Chicken Republic</span> and we don't know.`},
+
+{id:11, sentiment:"positive", emotion:"Nostalgia", topics:["meat pie taste","lasting memory"],
+ text:`Can never get the taste of <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> outta my mind... nobody has <span class="pos-t">beaten</span> that record so far.`},
+
+{id:12, sentiment:"negative", emotion:"Disappointment", topics:["quality decline","substitute products"],
+ text:`Na during <span class="ppl-t">Mr Biggs</span> we know wetin be <span class="food-t">meat pie</span>... now na <span class="food-t">potato pie, carrot pie, cabbage pie</span> we de eat.`},
+
+{id:13, sentiment:"negative", emotion:"Dislike", topics:["pastry texture","contrarian opinion"],
+ text:`I never liked <span class="ppl-t">Mr Biggs</span> <span class="food-t">pastries</span>, so I'm amazed at all these comments — they make the dough too <span class="pos-t">hard n dry</span>.`},
+
+{id:14, sentiment:"positive", emotion:"Nostalgia", topics:["meat pie","memory"],
+ text:`That <span class="food-t">meat pie</span>! The <span class="pos-t">nostalgia</span>.`},
+
+{id:15, sentiment:"positive", emotion:"Appreciation", topics:["scotch egg","underrated product"],
+ text:`Nobody is talking about <span class="ppl-t">Mr Biggs</span> <span class="food-t">scotch egg</span>.`},
+
+{id:16, sentiment:"positive", emotion:"Admiration", topics:["meat pie quality"],
+ text:`Omo prime <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> 💯`},
+
+{id:17, sentiment:"positive", emotion:"Admiration", topics:["meat pie","unique taste"],
+ text:`<span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> had a <span class="pos-t">unique</span> taste too! It was just different — a unique brownish colour, always <span class="pos-t">yum</span> and a win-win!`},
+
+{id:18, sentiment:"positive", emotion:"Pride", topics:["meat pie superiority"],
+ text:`No <span class="food-t">meat pie</span> has <span class="pos-t">defeated</span> <span class="ppl-t">Mr Biggs</span>' in taste.`},
+
+{id:19, sentiment:"positive", emotion:"Defensiveness", topics:["meat pie superiority","generational debate"],
+ text:`Anybody who says there are better <span class="food-t">meat pies</span> than the then <span class="ppl-t">Mr Biggs</span> is a Genz, and that's on period!`},
+
+{id:20, sentiment:"positive", emotion:"Admiration", topics:["meat pie texture","aroma"],
+ text:`<span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> was <span class="pos-t">legendary</span>. The crunchiness and the aroma was definitely one of a kind... nostalgic.`},
+
+{id:21, sentiment:"positive", emotion:"Admiration", topics:["meat pie superiority"],
+ text:`<span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> is the <span class="pos-t">goat</span>.`},
+
+{id:22, sentiment:"positive", emotion:"Nostalgia / sadness", topics:["meat pie","scotch egg","good old days"],
+ text:`I can still remember <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> taste. <span class="food-t">Chicken George scotch egg</span> nko? Omo... I <span class="pos-t">miss</span> the good old days 😭😭😭`},
+
+{id:23, sentiment:"positive", emotion:"Nostalgia", topics:["meat pie"],
+ text:`Yes o, <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> was <span class="pos-t">everything</span> back then.`},
+
+{id:24, sentiment:"positive", emotion:"Fondness", topics:["meat pie","favorite snack"],
+ text:`Yes, <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span> was my <span class="pos-t">favorite</span> snack then ❤️`},
+
+{id:25, sentiment:"mixed", emotion:"Regret", topics:["missed opportunity","travel"],
+ text:`I went to Naija in 2020 and <span class="pos-t">regret</span> not going into the <span class="ppl-t">Mr Biggs</span> I saw at the airport in <span class="loc-t">Lagos</span>. Definitely going next time.`},
+
+{id:26, sentiment:"negative", emotion:"Grief", topics:["loss","nostalgia"],
+ text:`<span class="ppl-t">Mr Biggs</span> used to be the place... it was <span class="pos-t">the very place</span> 💔`},
+
+{id:27, sentiment:"positive", emotion:"Nostalgia", topics:["childhood memory","branch location"],
+ text:`Great video, bro! I think our childhood memory is long gone ooo. Growing up, <span class="ppl-t">Mr Biggs</span> <span class="loc-t">AYA roundabout, Abuja</span> was a <span class="pos-t">banger</span>!!!!`},
+
+{id:28, sentiment:"mixed", emotion:"Sadness", topics:["video appreciation","brand decline"],
+ text:`This is a very <span class="pos-t">nice</span> documentary... I like how you ended it. I used to think — what happened to <span class="ppl-t">Mr Biggs</span>? It's so <span class="pos-t">sad</span>.`},
+
+{id:29, sentiment:"negative", emotion:"Surprise / sadness", topics:["brand closure","competitor decline"],
+ text:`Great breakdown. I haven't been back in <span class="loc-t">Nigeria</span> in over 15 years — came back and was really <span class="pos-t">surprised</span> that <span class="ppl-t">Mr Biggs</span> is no more, even <span class="ppl-t">Tantalizers</span> was starting to fade out.`},
+
+{id:30, sentiment:"negative", emotion:"Resignation", topics:["brand decline timeline","competition"],
+ text:`<span class="ppl-t">Mr Biggs</span> was very much <span class="pos-t">dead</span> before <span class="ppl-t">KFC</span> and <span class="ppl-t">Chicken Republic</span> ever came in.`},
+
+{id:31, sentiment:"positive", emotion:"Fondness", topics:["childhood memory","family","meat pie"],
+ text:`Even growing up, <span class="ppl-t">Mr Biggs</span> was my <span class="pos-t">favorite</span> — my dad always got us <span class="food-t">meat pie</span> from Mr B, I remember keeping the nylon just to take it to school as proof!!!!!!`},
+
+{id:32, sentiment:"positive", emotion:"Nostalgia", topics:["meat pie uniqueness"],
+ text:`To this day, I haven't tasted <span class="food-t">meat pie</span> like <span class="ppl-t">Mr Biggs</span>'.`},
+
+{id:33, sentiment:"positive", emotion:"Joy", topics:["advertising","childhood excitement"],
+ text:`The good old days — hearing <span class="ppl-t">Mr Biggs</span> ads on TV alone, I'd <span class="pos-t">run</span> from the room into the parlor to watch it.`},
+
+{id:34, sentiment:"mixed", emotion:"Heartbreak", topics:["cross-border popularity","fried rice","closure grief"],
+ text:`<span class="ppl-t">Mr Biggs</span> was very popular in my country 🇬🇭 and I had no idea it was a Nigerian chain. The food was so <span class="pos-t">good</span> — our location had <span class="food-t">fried rice</span> and it was my favorite 😩😩 I remember being <span class="pos-t">heartbroken</span> when they closed.`},
+
+{id:35, sentiment:"neutral", emotion:"Informative", topics:["regional experience","video praise"],
+ text:`Nice analysis. I can only speak for <span class="loc-t">Jos, Kaduna and Zaria</span> where I have lived.`},
+
+{id:36, sentiment:"negative", emotion:"Frustration", topics:["franchising failure","quality decline","staff hospitality"],
+ text:`Competition contributed less to <span class="ppl-t">Mr Biggs</span>' downfall than franchising — that <span class="pos-t">practically destroyed</span> quality and consistency. You'd rather eat fresh food than <span class="pos-t">rotten</span> <span class="food-t">fried rice</span>, stale <span class="food-t">hot sour salads</span> or <span class="food-t">meatless pies</span>, served by staff who transfer their aggression to customers.`},
+
+{id:37, sentiment:"positive", emotion:"Admiration / hope", topics:["meat pie quality","brand revival suggestion"],
+ text:`Ever since <span class="ppl-t">Mr Biggs</span> closed down, I haven't come across a <span class="food-t">meat pie</span> that matches theirs — wonderfully <span class="pos-t">meaty</span> and packed with flavor. Perhaps they should consider starting from there again.`},
+
+{id:38, sentiment:"positive", emotion:"Hope", topics:["brand revival wish","good memories"],
+ text:`What happened to you guys? You gave me <span class="pos-t">good memories</span> ooo. I pray your business comes back alive. I hope to visit whenever I return to <span class="loc-t">Nigeria</span> 👏`},
+
+{id:39, sentiment:"positive", emotion:"Joy", topics:["brand wordplay","food enjoyment"],
+ text:`A <span class="pos-t">great</span> Monday starts with a <span class="ppl-t">Bigg</span> bite! 😋`},
+
+{id:40, sentiment:"positive", emotion:"Hope / nostalgia", topics:["brand revival wish","childhood"],
+ text:`I hope you guys come back with the best meal n snacks — growing up with <span class="ppl-t">Mr Biggs</span> is actually a big moment.`},
+
+{id:41, sentiment:"positive", emotion:"Longing", topics:["nostalgia","childhood brand"],
+ text:`Oh, my <span class="ppl-t">Mr Biggs</span>, na WA o. I <span class="pos-t">miss</span> you guys!! A childhood fast-food brand!!`},
+
+{id:42, sentiment:"positive", emotion:"Enjoyment", topics:["spicy chicken","favorite item"],
+ text:`It's the <span class="food-t">spicy chicken</span> for me 🙌`},
+
+{id:43, sentiment:"positive", emotion:"Satisfaction", topics:["food quality"],
+ text:`<span class="pos-t">Always good</span> 🤤`},
+
+{id:44, sentiment:"positive", emotion:"Admiration", topics:["pie quality"],
+ text:`Normally you guys have the <span class="pos-t">best</span> <span class="food-t">pie</span> ever 🔥`},
+
+{id:45, sentiment:"positive", emotion:"Longing", topics:["meat pie","authenticity"],
+ text:`The real OG — I <span class="pos-t">miss</span> <span class="ppl-t">Mr Biggs</span> <span class="food-t">meat pie</span>.`},
+
+{id:46, sentiment:"negative", emotion:"Concern / confusion", topics:["brand inactivity","ownership speculation"],
+ text:`What is happening, <span class="ppl-t">Mr Biggs</span>? For like 2 years now you've not been active everywhere — have you sold the company???`},
+
+{id:47, sentiment:"mixed", emotion:"Surprise / nostalgia", topics:["brand still exists","ice cream","meat pie"],
+ text:`Wow!!! <span class="ppl-t">Mr Biggs</span> still dey......? Chai, those days una <span class="food-t">ice cream</span> and <span class="food-t">meat pie</span> too <span class="pos-t">make sense</span>....`},
+
+{id:48, sentiment:"neutral", emotion:"Concern", topics:["brand status inquiry"],
+ text:`Are you people still around??? Chai, our <span class="ppl-t">Mr Biggs</span>.`},
+
+{id:49, sentiment:"positive", emotion:"Longing", topics:["nostalgia","childhood identity"],
+ text:`Nostalgia.... Damn, I really <span class="pos-t">miss</span> you guys so, so much. I was a huge <span class="ppl-t">Mr Biggs</span> person when I was a kid.`},
+
+{id:50, sentiment:"positive", emotion:"Excitement", topics:["following brand","childhood memories"],
+ text:`Wow, I had to follow immediately — Hi <span class="ppl-t">Mr Biggs</span>, I've had <span class="pos-t">good</span> childhood memories with your brand.`},
+
+{id:51, sentiment:"neutral", emotion:"Constructive suggestion", topics:["marketing suggestion","brand ambassador"],
+ text:`<span class="ppl-t">Mr Biggs</span>, you need a brand ambassador.`},
+
+{id:52, sentiment:"neutral", emotion:"Hope", topics:["recipe restoration request"],
+ text:`Bring back the original <span class="food-t">meat pie</span> recipe.`},
+
+{id:53, sentiment:"positive", emotion:"Satisfaction", topics:["spaghetti quality"],
+ text:`Their <span class="food-t">spaghetti</span> was really <span class="pos-t">nice</span>.`},
+
+{id:54, sentiment:"neutral", emotion:"Curiosity", topics:["menu inquiry"],
+ text:`Do you guys have a <span class="ppl-t">Mr Biggs</span> <span class="food-t">platter</span>? A lil bit of everything.`},
+
+{id:55, sentiment:"mixed", emotion:"Nostalgic hope", topics:["childhood nostalgia","marketing suggestion","brand revival"],
+ text:`You guys made childhood so <span class="pos-t">fun</span> 🥺🥺 some aggressive marketing would help, I guess — y'all need to get back to where you used to 🙏🏾`},
+
+{id:56, sentiment:"negative", emotion:"Concern / confusion", topics:["brand inactivity","ownership speculation"],
+ text:`What is happening, <span class="ppl-t">Mr Biggs</span>? For like 2 years now you've not been active everywhere — have you sold the company???`},
+
+{id:57, sentiment:"positive", emotion:"Amusement", topics:["rice","humor"],
+ text:`Where is my <span class="food-t">rice</span> 😂`},
+];
+
+// ---------- render comment list ----------
+const listEl = document.getElementById('commentList');
+const filterRow = document.getElementById('filterRow');
+
+function plainText(html){
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return d.textContent || d.innerText || '';
+}
+
+function renderList(filter){
+  listEl.innerHTML = '';
+  DATA.filter(c => filter === 'all' || c.sentiment === filter).forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'c-card';
+    const preview = plainText(c.text).slice(0, 78);
+    card.innerHTML = `
+      <div class="c-head">
+        <div class="c-head-left">
+          <span class="c-id">#${String(c.id).padStart(2,'0')}</span>
+          <span class="c-preview">${preview}${preview.length>=78?'…':''}</span>
+        </div>
+        <div class="c-head-left" style="flex-shrink:0;">
+          <span class="badge ${c.sentiment}">${c.sentiment}</span>
+          <span class="chev">▾</span>
+        </div>
+      </div>
+      <div class="c-body">
+        <div class="c-body-inner">
+          <div class="c-text">${c.text}</div>
+          <div class="c-meta-row">
+            <div>
+              <span class="m-label">Dominant emotion</span>
+              <span class="emo-tag">${c.emotion}</span>
+            </div>
+            <div>
+              <span class="m-label">Key topics</span>
+              <div class="topic-tags">${c.topics.map(t=>`<span class="topic-tag">${t}</span>`).join('')}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('open'));
+    listEl.appendChild(card);
+  });
+}
+
+const counts = DATA.reduce((a,c)=>{a[c.sentiment]=(a[c.sentiment]||0)+1;return a;},{});
+const filters = [
+  {key:'all', label:'All', count: DATA.length},
+  {key:'positive', label:'Positive', count: counts.positive||0},
+  {key:'mixed', label:'Mixed', count: counts.mixed||0},
+  {key:'neutral', label:'Neutral', count: counts.neutral||0},
+  {key:'negative', label:'Negative', count: counts.negative||0},
+];
+filters.forEach((f,i)=>{
+  const btn = document.createElement('button');
+  btn.className = 'filter-btn' + (i===0?' active':'');
+  btn.innerHTML = `${f.label} <span class="fc">${f.count}</span>`;
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderList(f.key);
+  });
+  filterRow.appendChild(btn);
+});
+renderList('all');
+
+// ---------- charts ----------
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+new Chart(document.getElementById('sentimentChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Positive','Mixed','Neutral','Negative'],
+    datasets: [{
+      data: [counts.positive||0, counts.mixed||0, counts.neutral||0, counts.negative||0],
+      backgroundColor: ['#3E7A3B','#B5822B','#5C6670','#A13E2E'],
+      borderColor: '#fff',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    maintainAspectRatio:false,
+    cutout:'62%',
+    plugins:{
+      legend:{position:'bottom', labels:{boxWidth:10, padding:16, font:{size:12.5}}},
+      tooltip:{callbacks:{label: ctx => ` ${ctx.label}: ${ctx.parsed} comments`}}
+    }
+  }
+});
+
+const emotionCounts = {};
+DATA.forEach(c=>{
+  const key = c.emotion.split('/')[0].trim().split('(')[0].trim();
+  emotionCounts[key] = (emotionCounts[key]||0)+1;
+});
+const sortedEmotions = Object.entries(emotionCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+new Chart(document.getElementById('emotionChart'), {
+  type: 'bar',
+  data: {
+    labels: sortedEmotions.map(e=>e[0]),
+    datasets: [{
+      data: sortedEmotions.map(e=>e[1]),
+      backgroundColor: '#B5822B',
+      borderRadius: 5,
+      barThickness: 16,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label: ctx => ` ${ctx.parsed.x} comments`}} },
+    scales:{
+      x:{ beginAtZero:true, ticks:{precision:0, font:{size:11.5}}, grid:{color:'#EFE6D2'} },
+      y:{ ticks:{font:{size:12.5}}, grid:{display:false} }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

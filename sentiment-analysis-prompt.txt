@@ -1,0 +1,164 @@
+
+I collected 52 customer comments about Mr. Biggs, a restaurant franchise operating in Nigeria. The comments were downloaded from online sources(primarily social media platforms) Each comment is separated from the next by a blank line.
+
+
+Mr Biggs operates branches across Nigeria including Abuja, Lagos and other location. Some products mentioned in the comments may include meat pie, potato pie, cabbage pie, carrot pie, scotch egg, sprite soft drink, Chicken George scotch egg, fried rice, hot sour salads, meatless pies, hot drinks, ice cream etc.
+Comments may contain pidgin English, slang, abbreviation, emojis, spelling mistakes, sarcasm etc. Interpret them according to their intended meaning rather than literal meaning or wording.
+
+Perform a comprehensive sentiment analysis of all 52 comments. Analyze  every comments individually before producing the overall summary. For each comment, do the following:
+
+1. Provide overall sentiment using positive, negative, neutral and mixed sentiment.
+2. Identify the dominant emotion
+3. Identify key topics that was mentioned in the comment
+4. Identify  all the entities using color coding(location = blue, food = green, people = orange)
+5. Highlight part of speech (POS). Do not tag every single word unless it is necessary.(color coding of purple)
+
+After analyzing all comments, provide overall sentiment and emotion distribution, most discussed topics, frequently mentioned products, locations, complaints, and compliments if any. State the overall customer sentiment towards Mr. Biggs and identify the single emotion that best represents customers overall and explain why. Also state clearly whether customers are generally happy with Mr. Biggs. Provide one actionable and specific recommendation based on the findings.
+
+Deliver this as an interactive HTML report with visual chart(pie or bar) and color legends
+
+Below are the comments
+
+************************
+
+Mr Biggs was brought down by the franchise system, which failed to maintain standards, coupled with Nigeria's economic decline.
+
+Bargaining power of supplier(ability of suppliers to raise input prices or increase cost of industry through poor outputs or services. )
+
+Bargaining power buyers (the ability of customers to bargain down prices, or raise the cost of companies by demanding better service performance or product quality.)
+
+availability /threat of close substitutes.(product or service) people are learning and doing benchmarking in the industry, they're prospective substitutes before you know they have know how of what seems to be your problem or challenge and they will capitalize on it.
+
+They lost competitive advantage and no competitive advantage is safe for long, its either you manage or you loose it, this are some underlying reasons for loosing it.
+
+changes in customers preference, and when customers decide not to be loyal to a brand. Don't make a shift unless you know the shift is something your customers will value. 
+
+challenges from competitors, loosing market share. Even big companies can crumble under competition if they don't keep up with industry trends/growth.
+
+internal challenges, new ownership or CEO who changes the focus or direction of the company. 
+
+And corporate strategy matters to for the general decision of the firm.
+
+1.stability strategy 
+2.growth strategy. 
+3.retrenchment strategy. 
+
+In their case they used the stability strategy for a long time, forgetting that the business environment is dynamic not static. People change, likewise their needs and choices. 
+
+Having low innovation and low risk with minimal adjustment or modification to trends and customers preference is always not going to end well, business failure isn't far from it, because definitely sales will decline, income will decrease, loss of market share, loss of competitive advantage and once you are not making profits, a company is forced to go for retrenchment strategy and strategize for growth, improving operational efficiency, anything other than that, leads to business failure.
+
+It's chicken republic and I am there right now 
+It brings memories 😂😄😂
+
+Getting old can be tough. We get weaker, forget things, and every day reminds us that time's flying by every seconds🌀🌸
+
+Mr Biggs
+
+There are non, Mr biggs had quality meat pie filled with meat and big size and quantity. Others are just small sized glorified potato pies.
+
+Omo prime Mr Biggs oh that we save to go their meat pie and sprit.
+
+Seriously there's nothing spectacular about Mr Biggs' meat pies, I honestly have eaten better meat pies.
+
+Which nostalgia. Their meat pie was good, the only restaurant that could contend with them was tantalizers. Y'all are saying it wasn't now because they're no more.
+
+Mr Biggs was the best before they started to franchise their name to anyone who could pay.
+
+Their meat pie was big and sweet 😋 I miss them oooo who knows if they are the chicken republic and we don't know.
+
+Can never get the taste of Mr Biggs meat pie outta my mind....nobody has beaten that record so far
+
+Na during Mr Biggs we know wetin be meat pie.....now na potato pie,carrot pie,cabbage pie we de eat.
+
+I never liked Mr.Biggs pastries so I'm amazed at all these comments they make the dough too hard n dry
+
+That meat pie! The nostalgia
+
+Nobody is talking about Mr Biggs scotch egg 
+
+Omo prime Mr Biggs meat pie 💯
+
+Mr Biggs meat pie had a unique taste too! It was just different! Not yet found why it had that unique taste. I remember it had a unique brownish colour… it was always yum and a win win!!
+
+No meat pie has defeated Mr Biggs' in taste
+
+Anybody who says that there are better meat pies than the then Mr. Biggs is a Genz, and that's on period!
+
+Mr Biggs meat pie was legendary. The crunchiness and the aroma was definitely one of a kind.... nostalgic
+
+Mr. Biggs meat pie is the goat
+
+I  can still remember mr Biggs meat pie taste. Chicken George scotch egg nko. Omo…I miss the good old days.😭😭😭
+
+Yes o, Mr Biggs meat pie was everything back then.
+
+Yes Mr Bigg's meat pie was my favorite snacks then❤️
+
+I went to Naija in 2020, and I regret not going into the Mr. Biggs I saw at the airport in Lagos. Definitely going next time.
+
+Mr Biggs used to be the place….. It was the very place💔
+
+Great video Bro! I think our childhood memory is long gone ooooo. Growing up, Mr.Biggs AYA round about Abuja was a banger!!!!
+
+this is a very nice documentary...I like how you ended it . I use to think what happened to mr Biggs ,its so sad
+
+Great breakdown. I haven't been back in Nigeria in over 15yrs, came back and was really surprised that Mr. Biggs is no more, even Tantalizers was starting to fade out.
+
+Mr Biggs was very much dead before kfc and chicken republic ever came in
+
+Even when growing up Mr Biggs was my favorite my dad always get us Meatpie from Mr b I remembered keeping the nylon just  to take it to school as proof!!!!!!
+
+To this day, I haven't tasted meat pie like Mr Bigg's
+
+The good old days, hearing Mr Biggs ads on TV alone I run from the room into the parlor to watch it
+
+Before I watch the video, I’ll say this. Mr. Biggs was very popular in my country🇬🇭and I had no idea it was a Nigerian chain. Some core memories from childhood are coming back up🥹
+The food was so good. Our location has fried rice and it was my favorite!😩😩I remember being heartbroken when they closed.
+
+Nice analysis. I..I can only speak for Jos, Kaduna and Zaria where I have lived..
+
+Competition contributed less to Mr Biggs' downfall than franchising...that practically destroyed quality and consistency. At a point you know that any Mr Biggs you go to food will taste the same. But all of a sudden, you had to start picking and choosing because of freshness, staff hospitality and deteriorating facilities. If I'm spending money I'd rather eat fresh food and cold drinks served with a smile and not coming to sweat on a line to buy rotten fried rice/stale hot sour salads/ meatless pies/hot drinks..served by staff that seem to be having personal problems in their lives and feel the need to transfer their aggression to customers.
+
+Item 7 might not be very small, so the competition could become even tougher. Ever since Mr. Biggs closed down, I haven't come across a Meat Pie that matches theirs. Their meat pies were wonderfully meaty and packed with flavor, and I can still recall how delicious they were. Perhaps they should consider starting from there again.
+
+What happened to you guys? You guys gave me good memories ooo. I pray your business comes back alive. I hope to visit whenever I return to Nigeria 👏
+
+A great Monday starts with a Bigg bite! 😋
+
+I hope you guys come back with best meal n snacks, growing up with Mr Biggs is actually big moment
+
+Oh, my Mr Biggs, na WA o. I miss you guys!! A childhood fast food brand!!
+
+It’s the spicy chicken for me 🙌
+
+Always good 🤤
+
+Normally you guys have the best pie ever 🔥
+
+The real og I miss Mr Biggs meat pie
+
+What is happening, Mr Biggs? For like 2years now you've not been active everywhere, have you sold the company???
+
+Wow!!! Mr Biggs still dey......? Chai those days una ice cream and meat pie too make sense....
+
+Are you people still around??? Chai our Mr. Biggs
+
+Nostalgia.... Damn I really miss you guys so so much. I was a huge mr biggs person when I was a kid
+
+Wow I had to follow immediately, HI Mr Biggs, I’ve had good Childhood memories with your brand
+
+Mr Biggs, you need brand ambassador
+
+Bring back the original meat pie recipe
+
+Their spaghetti was really nice
+
+Do you guys have a Mr Biggs platter. A lil bit of everything
+
+You guys made childhood so fun🥺🥺 some aggressive marketing would help I guess y’all need to get back to where you used to🙏🏾
+ 
+What is happening, Mr Biggs? For like 2years now you've not been active everywhere, have you sold the company???
+
+Where is my rice 😂
+
+

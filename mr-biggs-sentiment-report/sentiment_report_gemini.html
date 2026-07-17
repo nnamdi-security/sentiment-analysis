@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr. Biggs Customer Sentiment & Executive Analysis Report</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --text-primary: #1e293b;
+            --accent-red: #dc2626;
+            --accent-gold: #d97706;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            
+            /* Entity Colors */
+            --entity-location: #2563eb;
+            --entity-food: #16a34a;
+            --entity-people: #ea580c;
+            --pos-highlight: #7c3aed;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--accent-red), #991b1b);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (min-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: #0f172a;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Chart Styling */
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin: 1rem 0;
+        }
+
+        .chart-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        /* Text Analysis Visualizers */
+        .legend-bar {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        .badge-loc { background-color: var(--entity-location); }
+        .badge-food { background-color: var(--entity-food); }
+        .badge-ppl { background-color: var(--entity-people); }
+        .badge-pos { background-color: var(--pos-highlight); }
+
+        /* Comment List */
+        .comment-stream {
+            max-height: 800px;
+            overflow-y: auto;
+            padding-right: 1rem;
+        }
+
+        .comment-block {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-left: 5px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .comment-block:hover {
+            transform: translateX(4px);
+        }
+
+        .comment-block.pos { border-left-color: #22c55e; }
+        .comment-block.neg { border-left-color: #ef4444; }
+        .comment-block.neu { border-left-color: #64748b; }
+        .comment-block.mix { border-left-color: #eab308; }
+
+        .comment-text {
+            font-size: 1.05rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+            color: #334155;
+        }
+
+        .analysis-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .meta-tag {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid var(--border-color);
+        }
+
+        .entity-loc { color: var(--entity-location); font-weight: bold; border-bottom: 2px dashed var(--entity-location); }
+        .entity-food { color: var(--entity-food); font-weight: bold; border-bottom: 2px dashed var(--entity-food); }
+        .entity-ppl { color: var(--entity-people); font-weight: bold; border-bottom: 2px dashed var(--entity-people); }
+        .pos-tag { color: var(--pos-highlight); font-weight: 500; text-decoration: underline var(--pos-highlight); }
+
+        .callout-box {
+            background: #fff9db;
+            border-left: 5px solid #fcc419;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Mr. Biggs Brand Audit Report</h1>
+        <p>A Comprehensive Sentiment Analysis of 52 Online Consumer Comments</p>
+    </header>
+
+    <!-- SECTION 1: EXEC SUMMARY & METRICS -->
+    <div class="grid-layout">
+        <!-- Sentiment Chart Card -->
+        <div class="card">
+            <h2>Overall Sentiment Distribution</h2>
+            <div class="chart-container">
+                <svg width="240" height="240" viewBox="0 0 32 32">
+                    <!-- Positive: 46.1% (166 deg) -> stroke-dasharray="46.1 100" -->
+                    <circle cx="16" cy="16" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="3.2" stroke-dasharray="46.1 100" stroke-dashoffset="25"></circle>
+                    <!-- Mixed: 30.8% (111 deg) -> stroke-dasharray="30.8 100" -->
+                    <circle cx="16" cy="16" r="15.915" fill="transparent" stroke="#eab308" stroke-width="3.2" stroke-dasharray="30.8 100" stroke-dashoffset="-21.1"></circle>
+                    <!-- Negative: 19.2% (69 deg) -> stroke-dasharray="19.2 100" -->
+                    <circle cx="16" cy="16" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="3.2" stroke-dasharray="19.2 100" stroke-dashoffset="-51.9"></circle>
+                    <!-- Neutral: 3.8% (14 deg) -> stroke-dasharray="3.8 100" -->
+                    <circle cx="16" cy="16" r="15.915" fill="transparent" stroke="#64748b" stroke-width="3.2" stroke-dasharray="3.8 100" stroke-dashoffset="-71.1"></circle>
+                </svg>
+                <div class="chart-legend">
+                    <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div>Positive: 46.1% (24)</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#eab308"></div>Mixed: 30.8% (16)</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>Negative: 19.2% (10)</div>
+                    <div class="legend-item"><div class="legend-color" style="background:#64748b"></div>Neutral: 3.8% (2)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emotion Distribution Card -->
+        <div class="card">
+            <h2>Dominant Emotion Vectors</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Emotion</th>
+                        <th>Frequency</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Nostalgia</strong></td><td>26</td><td>50.0%</td></tr>
+                    <tr><td><strong>Disappointment / Regret</strong></td><td>11</td><td>21.2%</td></tr>
+                    <tr><td><strong>Longing / Hopefulness</strong></td><td>7</td><td>13.5%</td></tr>
+                    <tr><td><strong>Analytical / Objective</strong></td><td>6</td><td>11.5%</td></tr>
+                    <tr><td><strong>Joy / Excitement</strong></td><td>2</td><td>3.8%</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- STRATEGIC ANALYSIS -->
+    <div class="card" style="margin-bottom: 3rem;">
+        <h2>Executive Core Findings</h2>
+        <p><strong>Are customers generally happy with Mr. Biggs?</strong><br>
+        <strong>No, not with their current state.</strong> Customers are deeply in love with the <em>historical memory</em> of Mr. Biggs, but explicitly unhappy with its modern decline, general absence, and perceived collapse of consistency. 
+        </p>
+
+        <p><strong>The Defining Emotion: <span style="color:var(--accent-gold); font-weight:bold;">Nostalgia</span></strong><br>
+        Nostalgia represents exactly 50% of all individual comment tones. The brand holds unparalleled emotional real estate across generations of Nigerian consumers. Customers associate the name with childhood wins, family gatherings, and high-quality pastry standards ("when meat pie was actual meat pie, not potato fill"). 
+        </p>
+
+        <div class="callout-box">
+            <h3>Strategic Actionable Recommendation</h3>
+            <p><strong>Execute a "Retro Revival" Inversion Strategy:</strong> The data proves that franchising broke the brand's quality controls. Mr. Biggs should immediately launch a highly visible, corporate-owned flagship store footprint in major hubs (like <span class="entity-loc">Abuja</span> or <span class="entity-loc">Lagos</span>) anchored around marketing the <strong>"Original Recipe Meat Pie"</strong>. Do not use standard franchise partners for this launch. Pair this with aggressive digital content assets reminding consumers of the "good old days" to convert passive nostalgia into foot traffic.</p>
+        </div>
+
+        <h3>Macro Diagnostic Profiles</h3>
+        <table>
+            <tr>
+                <td><strong>Most Discussed Topics</strong></td>
+                <td>Franchise failure & standard dilution (11), Pastry quality shift (12), Childhood memories & TV ads (16), Market absence (6)</td>
+            </tr>
+            <tr>
+                <td><strong>Frequently Mentioned Products</strong></td>
+                <td><span class="entity-food">Meat Pie</span> (27 mentions), <span class="entity-food">Potato Pie / Carrot Pie / Cabbage Pie</span> (as negative substitutes) (3), <span class="entity-food">Scotch Egg</span> (3), <span class="entity-food">Fried Rice</span> (3), <span class="entity-food">Ice Cream</span> (1)</td>
+            </tr>
+            <tr>
+                <td><strong>Key Locations Found</strong></td>
+                <td><span class="entity-loc">Nigeria</span>, <span class="entity-loc">Abuja</span>, <span class="entity-loc">Lagos</span>, <span class="entity-loc">Jos</span>, <span class="entity-loc">Kaduna</span>, <span class="entity-loc">Zaria</span>, <span class="entity-loc">Ghana</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- SECTION 2: INDIVIDUAL COMMENT STREAM -->
+    <h2>Granular Individual Analysis (52 Comments Analyzed)</h2>
+    <div class="legend-bar">
+        <span><strong>Entity Legends:</strong></span>
+        <span class="badge badge-loc">Location (Blue)</span>
+        <span class="badge badge-food">Food/Drink (Green)</span>
+        <span class="badge badge-ppl">People (Orange)</span>
+        <span class="badge badge-pos">Highlighted Parts of Speech (Purple)</span>
+    </div>
+
+    <div class="comment-stream">
+
+        <!-- Comment 1 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#1</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Analytical / Critical</span>
+                <span class="meta-tag">Topics: Franchise System, Economic Decline</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> <span class="pos-tag">was brought down</span> by the franchise system, which <span class="pos-tag">failed</span> to maintain standards, coupled with <span class="entity-loc">Nigeria</span>'s economic decline.
+            </div>
+        </div>
+
+        <!-- Comment 2 -->
+        <div class="comment-block neu">
+            <div class="analysis-meta">
+                <span class="meta-tag">#2</span>
+                <span class="meta-tag" style="background:#f1f5f9; color:#64748b;">Neutral</span>
+                <span class="meta-tag">Emotion: Objective</span>
+                <span class="meta-tag">Topics: Porter's Five Forces, Supplier Cost</span>
+            </div>
+            <div class="comment-text">
+                Bargaining power of <span class="entity-ppl">supplier</span> (ability of <span class="entity-ppl">suppliers</span> to <span class="pos-tag">raise</span> input prices or increase cost of industry through poor outputs or services.)
+            </div>
+        </div>
+
+        <!-- Comment 3 -->
+        <div class="comment-block neu">
+            <div class="analysis-meta">
+                <span class="meta-tag">#3</span>
+                <span class="meta-tag" style="background:#f1f5f9; color:#64748b;">Neutral</span>
+                <span class="meta-tag">Emotion: Objective</span>
+                <span class="meta-tag">Topics: Buyer Power, Product Quality</span>
+            </div>
+            <div class="comment-text">
+                Bargaining power <span class="entity-ppl">buyers</span> (the ability of <span class="entity-ppl">customers</span> to bargain down prices, or raise the cost of companies by demanding better service performance or product quality.)
+            </div>
+        </div>
+
+        <!-- Comment 4 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#4</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Analytical</span>
+                <span class="meta-tag">Topics: Competitor Benchmarking, Substitutes</span>
+            </div>
+            <div class="comment-text">
+                availability /threat of close substitutes.(product or service) <span class="entity-ppl">people</span> are learning and doing benchmarking in the industry, they're prospective substitutes before you know they have know how of what seems to be your problem or challenge and they will <span class="pos-tag">capitalize</span> on it.
+            </div>
+        </div>
+
+        <!-- Comment 5 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#5</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Regretful</span>
+                <span class="meta-tag">Topics: Competitive Advantage Loss</span>
+            </div>
+            <div class="comment-text">
+                They <span class="pos-tag">lost</span> competitive advantage and no competitive advantage is safe for long, its either you manage or you loose it, this are some underlying reasons for loosing it.
+            </div>
+        </div>
+
+        <!-- Comment 6 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#6</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Objective</span>
+                <span class="meta-tag">Topics: Customer Loyalty Shifts</span>
+            </div>
+            <div class="comment-text">
+                changes in <span class="entity-ppl">customers</span> preference, and when <span class="entity-ppl">customers</span> decide not to be <span class="pos-tag">loyal</span> to a brand. Don't make a shift unless you know the shift is something your <span class="entity-ppl">customers</span> will value.
+            </div>
+        </div>
+
+        <!-- Comment 7 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#7</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Cautionary</span>
+                <span class="meta-tag">Topics: Market Share, Competitor Pressure</span>
+            </div>
+            <div class="comment-text">
+                challenges from competitors, loosing market share. Even big companies can <span class="pos-tag">crumble</span> under competition if they don't keep up with industry trends/growth.
+            </div>
+        </div>
+
+        <!-- Comment 8 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#8</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Neutral / Corporate</span>
+                <span class="meta-tag">Topics: Internal Strategy, Executive Leadership</span>
+            </div>
+            <div class="comment-text">
+                internal challenges, new ownership or <span class="entity-ppl">CEO</span> who changes the focus or direction of the company. And corporate strategy matters to for the general decision of the firm. 1.stability strategy 2.growth strategy. 3.retrenchment strategy.
+            </div>
+        </div>
+
+        <!-- Comment 9 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#9</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Critical</span>
+                <span class="meta-tag">Topics: Static Management, Declining Innovation</span>
+            </div>
+            <div class="comment-text">
+                In their case they used the stability strategy for a long time, forgetting that the business environment is dynamic not static. <span class="entity-ppl">People</span> change, likewise their needs and choices. Having <span class="pos-tag">low innovation</span> and low risk with minimal adjustment or modification to trends and <span class="entity-ppl">customers</span> preference is always not going to end well...
+            </div>
+        </div>
+
+        <!-- Comment 10 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#10</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Amusement / Nostalgia</span>
+                <span class="meta-tag">Topics: Competitor Visit, Memory Jog</span>
+            </div>
+            <div class="comment-text">
+                It's <span class="entity-ppl">chicken republic</span> and I am there right now. It brings <span class="pos-tag">memories</span> 😂😄😂
+            </div>
+        </div>
+
+        <!-- Comment 11 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#11</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Melancholy</span>
+                <span class="meta-tag">Topics: Aging, Time Passing</span>
+            </div>
+            <div class="comment-text">
+                Getting old can be tough. <span class="entity-ppl">We</span> get <span class="pos-tag">weaker</span>, forget things, and every day reminds us that time's flying by every seconds🌀🌸 Mr Biggs
+            </div>
+        </div>
+
+        <!-- Comment 12 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#12</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Superior Ingredient Quality</span>
+            </div>
+            <div class="comment-text">
+                There are non, <span class="entity-ppl">Mr biggs</span> had quality <span class="entity-food">meat pie</span> filled with meat and big size and quantity. Others are just small sized glorified <span class="entity-food">potato pies</span>.
+            </div>
+        </div>
+
+        <!-- Comment 13 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#13</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Saving up for Treats</span>
+            </div>
+            <div class="comment-text">
+                Omo prime <span class="entity-ppl">Mr Biggs</span> oh that <span class="entity-ppl">we</span> <span class="pos-tag">save</span> to go their <span class="entity-food">meat pie</span> and <span class="entity-food">sprit</span>.
+            </div>
+        </div>
+
+        <!-- Comment 14 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#14</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Unimpressed</span>
+                <span class="meta-tag">Topics: Hype vs Reality</span>
+            </div>
+            <div class="comment-text">
+                Seriously there's <span class="pos-tag">nothing spectacular</span> about <span class="entity-ppl">Mr Biggs'</span> <span class="entity-food">meat pies</span>, I honestly have eaten better <span class="entity-food">meat pies</span>.
+            </div>
+        </div>
+
+        <!-- Comment 15 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#15</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Nostalgia / Defensive</span>
+                <span class="meta-tag">Topics: Brand Rivalry, Historical Validity</span>
+            </div>
+            <div class="comment-text">
+                Which <span class="pos-tag">nostalgia</span>. Their <span class="entity-food">meat pie</span> was good, the only restaurant that could contend with them was <span class="entity-ppl">tantalizers</span>. Y'all are saying it wasn't now because they're no more.
+            </div>
+        </div>
+
+        <!-- Comment 16 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#16</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Disappointment</span>
+                <span class="meta-tag">Topics: Franchise Standards Decline</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> was the <span class="pos-tag">best</span> before they started to franchise their name to anyone who could pay.
+            </div>
+        </div>
+
+        <!-- Comment 17 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#17</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Rebranding Speculation</span>
+            </div>
+            <div class="comment-text">
+                Their <span class="entity-food">meat pie</span> was <span class="pos-tag">big and sweet</span> 😋 I miss them oooo who knows if they are the <span class="entity-ppl">chicken republic</span> and we don't know.
+            </div>
+        </div>
+
+        <!-- Comment 18 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#18</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Unbeaten Flavor Records</span>
+            </div>
+            <div class="comment-text">
+                Can never get the taste of <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">meat pie</span> outta my mind....<span class="entity-ppl">nobody</span> has <span class="pos-tag">beaten</span> that record so far.
+            </div>
+        </div>
+
+        <!-- Comment 19 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#19</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Nostalgia / Disdain for Present</span>
+            </div>
+            <div class="comment-text">
+                Na during <span class="entity-ppl">Mr Biggs</span> we know wetin be <span class="entity-food">meat pie</span>.....now na <span class="entity-food">potato pie</span>,<span class="entity-food">carrot pie</span>,<span class="entity-food">cabbage pie</span> we de <span class="pos-tag">eat</span>.
+            </div>
+        </div>
+
+        <!-- Comment 20 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#20</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Dislike</span>
+                <span class="meta-tag">Topics: Pastry Texture Disapproval</span>
+            </div>
+            <div class="comment-text">
+                I never liked <span class="entity-ppl">Mr.Biggs</span> pastries so I'm amazed at all these comments they make the dough too <span class="pos-tag">hard n dry</span>.
+            </div>
+        </div>
+
+        <!-- Comment 21 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#21</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Iconic Pies</span>
+            </div>
+            <div class="comment-text">
+                That <span class="entity-food">meat pie</span>! The <span class="pos-tag">nostalgia</span>.
+            </div>
+        </div>
+
+        <!-- Comment 22 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#22</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Reminiscent</span>
+                <span class="meta-tag">Topics: Forgotten Menu Items</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Nobody</span> is talking about <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">scotch egg</span>.
+            </div>
+        </div>
+
+        <!-- Comment 23 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#23</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: High Praise</span>
+                <span class="meta-tag">Topics: Prime Era Execution</span>
+            </div>
+            <div class="comment-text">
+                Omo prime <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">meat pie</span> 💯 (Perfect rating <span class="pos-tag">adjective</span> equivalents).
+            </div>
+        </div>
+
+        <!-- Comment 24 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#24</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Product Appearance, Flavor Profile</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">meat pie</span> had a unique taste too! It was just different! Not yet found why it had that unique taste. I remember it had a unique <span class="pos-tag">brownish</span> colour… it was always yum and a win win!!
+            </div>
+        </div>
+
+        <!-- Comment 25 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#25</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Enthusiastic</span>
+                <span class="meta-tag">Topics: Superior Competitive Standing</span>
+            </div>
+            <div class="comment-text">
+                No <span class="entity-food">meat pie</span> has <span class="pos-tag">defeated</span> <span class="entity-ppl">Mr Biggs'</span> in taste.
+            </div>
+        </div>
+
+        <!-- Comment 26 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#26</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Defensive Loyalty</span>
+                <span class="meta-tag">Topics: Generational Divide on Taste</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Anybody</span> who says that there are better <span class="entity-food">meat pies</span> than the then <span class="entity-ppl">Mr. Biggs</span> is a <span class="entity-ppl">Genz</span>, and that's on period!
+            </div>
+        </div>
+
+        <!-- Comment 27 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#27</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Sensory Aroma, Texture</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">meat pie</span> was <span class="pos-tag">legendary</span>. The crunchiness and the aroma was definitely one of a kind.... nostalgic.
+            </div>
+        </div>
+
+        <!-- Comment 28 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#28</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Pride / Respect</span>
+                <span class="meta-tag">Topics: Greatest of All Time Tag</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr. Biggs</span> <span class="entity-food">meat pie</span> is the <span class="pos-tag">goat</span> (Greatest of All Time).
+            </div>
+        </div>
+
+        <!-- Comment 29 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#29</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Longing / Sadness</span>
+                <span class="meta-tag">Topics: Childhood Flashbacks</span>
+            </div>
+            <div class="comment-text">
+                I can still remember <span class="entity-ppl">mr Biggs</span> <span class="entity-food">meat pie</span> taste. <span class="entity-food">Chicken George scotch egg</span> nko. Omo…I <span class="pos-tag">miss</span> the good old days.😭😭😭
+            </div>
+        </div>
+
+        <!-- Comment 30 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#30</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Nostalgia</span>
+                <span class="meta-tag">Topics: Historic Perfection</span>
+            </div>
+            <div class="comment-text">
+                Yes o, <span class="entity-ppl">Mr Biggs</span> <span class="entity-food">meat pie</span> <span class="pos-tag">was everything</span> back then.
+            </div>
+        </div>
+
+        <!-- Comment 31 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#31</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Warmth</span>
+                <span class="meta-tag">Topics: Favorite Core Snacks</span>
+            </div>
+            <div class="comment-text">
+                Yes <span class="entity-ppl">Mr Bigg's</span> <span class="entity-food">meat pie</span> was my <span class="pos-tag">favorite</span> snacks then❤️
+            </div>
+        </div>
+
+        <!-- Comment 32 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#32</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Regret</span>
+                <span class="meta-tag">Topics: Missed Outlets, Travel Moments</span>
+            </div>
+            <div class="comment-text">
+                I went to <span class="entity-loc">Naija</span> in 2020, and I <span class="pos-tag">regret</span> not going into the <span class="entity-ppl">Mr. Biggs</span> I saw at the airport in <span class="entity-loc">Lagos</span>. Definitely going next time.
+            </div>
+        </div>
+
+        <!-- Comment 33 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#33</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Heartbreak / Loss</span>
+                <span class="meta-tag">Topics: Ultimate Gathering Spot Lost</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> used to be the place….. It was the <span class="pos-tag">very place</span>💔
+            </div>
+        </div>
+
+        <!-- Comment 34 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#34</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: High Nostalgia</span>
+                <span class="meta-tag">Topics: Iconic Roundabout Branch Outpost</span>
+            </div>
+            <div class="comment-text">
+                Great video Bro! I think our childhood memory is long gone ooooo. Growing up, <span class="entity-ppl">Mr.Biggs</span> <span class="entity-loc">AYA round about Abuja</span> was a <span class="pos-tag">banger</span>!!!!
+            </div>
+        </div>
+
+        <!-- Comment 35 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#35</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Sadness</span>
+                <span class="meta-tag">Topics: Shock at Brand Collapse</span>
+            </div>
+            <div class="comment-text">
+                this is a very nice documentary...I like how you ended it . I use to think what happened to <span class="entity-ppl">mr Biggs</span> ,its so <span class="pos-tag">sad</span>.
+            </div>
+        </div>
+
+        <!-- Comment 36 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#36</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Surprise</span>
+                <span class="meta-tag">Topics: Absence Notice Post-Migration</span>
+            </div>
+            <div class="comment-text">
+                Great breakdown. I haven't been back in <span class="entity-loc">Nigeria</span> in over 15yrs, came back and was really <span class="pos-tag">surprised</span> that <span class="entity-ppl">Mr. Biggs</span> is no more, even <span class="entity-ppl">Tantalizers</span> was starting to fade out.
+            </div>
+        </div>
+
+        <!-- Comment 37 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#37</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Critical Realism</span>
+                <span class="meta-tag">Topics: Market Displacement Chronology</span>
+            </div>
+            <div class="comment-text">
+                <span class="entity-ppl">Mr Biggs</span> was very much <span class="pos-tag">dead</span> before <span class="entity-ppl">kfc</span> and <span class="entity-ppl">chicken republic</span> ever came in.
+            </div>
+        </div>
+
+        <!-- Comment 38 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#38</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Childhood Joy</span>
+                <span class="meta-tag">Topics: School Bragging Rights, Brand Nylon</span>
+            </div>
+            <div class="comment-text">
+                Even when growing up <span class="entity-ppl">Mr Biggs</span> was my favorite my <span class="entity-ppl">dad</span> always get us <span class="entity-food">Meatpie</span> from <span class="entity-ppl">Mr b</span> I remembered <span class="pos-tag">keeping the nylon</span> just to take it to school as proof!!!!!!
+            </div>
+        </div>
+
+        <!-- Comment 39 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#39</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Absolute Conviction</span>
+                <span class="meta-tag">Topics: Gold Standard Calibration</span>
+            </div>
+            <div class="comment-text">
+                To this day, I haven't <span class="pos-tag">tasted</span> meat pie like <span class="entity-ppl">Mr Bigg's</span>.
+            </div>
+        </div>
+
+        <!-- Comment 40 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#40</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: High Nostalgia</span>
+                <span class="meta-tag">Topics: Television Commercial Impact</span>
+            </div>
+            <div class="comment-text">
+                The good old days, hearing <span class="entity-ppl">Mr Biggs</span> ads on TV alone I <span class="pos-tag">run</span> from the room into the parlor to watch it.
+            </div>
+        </div>
+
+        <!-- Comment 41 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#41</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Heartbroken Realization</span>
+                <span class="meta-tag">Topics: Transnational Operations Breakdown</span>
+            </div>
+            <div class="comment-text">
+                Before I watch the video, I’ll say this. <span class="entity-ppl">Mr. Biggs</span> was very popular in my country <span class="entity-loc">🇬🇭 (Ghana)</span> and I had no idea it was a <span class="entity-loc">Nigerian</span> chain. Some core memories from childhood are coming back up🥹 The food was so good. Our location had <span class="entity-food">fried rice</span> and it was my favorite!😩😩 I remember being <span class="pos-tag">heartbroken</span> when they closed.
+            </div>
+        </div>
+
+        <!-- Comment 42 -->
+        <div class="comment-block neu">
+            <div class="analysis-meta">
+                <span class="meta-tag">#42</span>
+                <span class="meta-tag" style="background:#f1f5f9; color:#64748b;">Neutral</span>
+                <span class="meta-tag">Emotion: Grounded</span>
+                <span class="meta-tag">Topics: Regional Geographic Reach</span>
+            </div>
+            <div class="comment-text">
+                Nice analysis. I..I can only speak for <span class="entity-loc">Jos</span>, <span class="entity-loc">Kaduna</span> and <span class="entity-loc">Zaria</span> where I have lived..
+            </div>
+        </div>
+
+        <!-- Comment 43 -->
+        <div class="comment-block neg">
+            <div class="analysis-meta">
+                <span class="meta-tag">#43</span>
+                <span class="meta-tag" style="background:#fee2e2; color:#ef4444;">Negative</span>
+                <span class="meta-tag">Emotion: Intense Disappointment</span>
+                <span class="meta-tag">Topics: Bad Service, Facility Decay, Rotten Food</span>
+            </div>
+            <div class="comment-text">
+                ...If I'm spending money I'd rather eat fresh food and cold drinks served with a smile and not coming to sweat on a line to buy <span class="entity-food">rotten fried rice</span> / <span class="entity-food">stale hot sour salads</span> / <span class="entity-food">meatless pies</span> / <span class="entity-food">hot drinks</span>.. served by <span class="entity-ppl">staff</span> that seem to be having personal problems... and feel the need to <span class="pos-tag">transfer their aggression</span> to <span class="entity-ppl">customers</span>.
+            </div>
+        </div>
+
+        <!-- Comment 44 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#44</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Hopeful Reconstruction</span>
+                <span class="meta-tag">Topics: Re-entry Strategy Advice</span>
+            </div>
+            <div class="comment-text">
+                Item 7 might not be very small, so the competition could become even tougher. Ever since <span class="entity-ppl">Mr. Biggs</span> closed down, I haven't come across a <span class="entity-food">Meat Pie</span> that matches theirs. Their <span class="entity-food">meat pies</span> were wonderfully meaty and packed with flavor... Perhaps they should <span class="pos-tag">consider starting</span> from there again.
+            </div>
+        </div>
+
+        <!-- Comment 45 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#45</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Interrogative Prayer</span>
+                <span class="meta-tag">Topics: Desired Brand Resurgence</span>
+            </div>
+            <div class="comment-text">
+                What happened to you guys? You guys gave me good memories ooo. I <span class="pos-tag">pray</span> your business comes back alive. I hope to visit whenever I return to <span class="entity-loc">Nigeria</span> 👏
+            </div>
+        </div>
+
+        <!-- Comment 46 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#46</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Joy</span>
+                <span class="meta-tag">Topics: Old Corporate Slogans</span>
+            </div>
+            <div class="comment-text">
+                A great Monday <span class="pos-tag">starts</span> with a Bigg bite! 😋
+            </div>
+        </div>
+
+        <!-- Comment 47 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#47</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Optimistic Longing</span>
+                <span class="meta-tag">Topics: Expectation of Quality Returns</span>
+            </div>
+            <div class="comment-text">
+                I hope you guys come back with <span class="pos-tag">best</span> meal n snacks, growing up with <span class="entity-ppl">Mr Biggs</span> is actually big moment
+            </div>
+        </div>
+
+        <!-- Comment 48 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#48</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Deep Longing</span>
+                <span class="meta-tag">Topics: Exclamatory Nostalgia</span>
+            </div>
+            <div class="comment-text">
+                Oh, my <span class="entity-ppl">Mr Biggs</span>, na WA o. I <span class="pos-tag">miss</span> you guys!! A childhood fast food brand!!
+            </div>
+        </div>
+
+        <!-- Comment 49 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#49</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Excitement</span>
+                <span class="meta-tag">Topics: Variant Menu Appreciations</span>
+            </div>
+            <div class="comment-text">
+                It’s the <span class="entity-food">spicy chicken</span> for <span class="entity-ppl">me</span> 🙌
+            </div>
+        </div>
+
+        <!-- Comment 50 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#50</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Content</span>
+                <span class="meta-tag">Topics: Consistency Validation</span>
+            </div>
+            <div class="comment-text">
+                Always <span class="pos-tag">good</span> 🤤
+            </div>
+        </div>
+
+        <!-- Comment 51 -->
+        <div class="comment-block pos">
+            <div class="analysis-meta">
+                <span class="meta-tag">#51</span>
+                <span class="meta-tag" style="background:#dcfce7; color:#16a34a;">Positive</span>
+                <span class="meta-tag">Emotion: Enthusiasm</span>
+                <span class="meta-tag">Topics: Legendary Bakery Affirmation</span>
+            </div>
+            <div class="comment-text">
+                Normally you guys have the <span class="pos-tag">best</span> pie ever 🔥
+            </div>
+        </div>
+
+        <!-- Comment 52 -->
+        <div class="comment-block mix">
+            <div class="analysis-meta">
+                <span class="meta-tag">#52</span>
+                <span class="meta-tag" style="background:#fef9c3; color:#713f12;">Mixed</span>
+                <span class="meta-tag">Emotion: Interrogative Concern</span>
+                <span class="meta-tag">Topics: Inactivity & Ownership Status</span>
+            </div>
+            <div class="comment-text">
+                What is happening, <span class="entity-ppl">Mr Biggs</span>? For like 2years now you've not been active everywhere, <span class="pos-tag">have you sold</span> the company??? Where is my <span class="entity-food">rice</span> 😂
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

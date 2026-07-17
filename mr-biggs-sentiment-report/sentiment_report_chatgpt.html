@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mr. Biggs Customer Sentiment Analysis Report</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --panel-2: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --line: rgba(255,255,255,.12);
+  --positive: #22c55e;
+  --negative: #ef4444;
+  --neutral: #94a3b8;
+  --mixed: #f59e0b;
+  --blue: #60a5fa;
+  --green: #34d399;
+  --orange: #fb923c;
+  --purple: #c084fc;
+  --brand: #facc15;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top left, rgba(250,204,21,.16), transparent 34%), var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+}
+header {
+  padding: 48px 24px 24px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.kicker {
+  color: var(--brand);
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: .82rem;
+  font-weight: 800;
+}
+h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  line-height: .98;
+  letter-spacing: -0.055em;
+}
+.subtitle {
+  max-width: 860px;
+  color: #cbd5e1;
+  font-size: 1.08rem;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+.section {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+  box-shadow: 0 20px 70px rgba(0,0,0,.22);
+}
+.grid {
+  display: grid;
+  gap: 16px;
+}
+.grid.stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(15,23,42,.62);
+  padding: 16px;
+}
+.metric {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+.metric-label { color: var(--muted); font-size: .9rem; }
+h2 { margin: 0 0 14px; font-size: 1.35rem; }
+h3 { margin: 0 0 8px; font-size: 1.03rem; }
+p { margin: 0 0 10px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  border: 1px solid rgba(255,255,255,.14);
+}
+.badge.positive { background: rgba(34,197,94,.13); color: #bbf7d0; }
+.badge.negative { background: rgba(239,68,68,.13); color: #fecaca; }
+.badge.neutral { background: rgba(148,163,184,.13); color: #e2e8f0; }
+.badge.mixed { background: rgba(245,158,11,.14); color: #fde68a; }
+.legend {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;
+}
+.legend span, .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: .78rem;
+  color: #e5e7eb;
+  margin: 2px 4px 2px 0;
+}
+.dot {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px;
+}
+.entity, .pos {
+  border-radius: 6px;
+  padding: 1px 4px;
+  font-weight: 700;
+  white-space: normal;
+}
+.entity.location { background: rgba(96,165,250,.18); color: #bfdbfe; border-bottom: 2px solid var(--blue); }
+.entity.food { background: rgba(52,211,153,.16); color: #bbf7d0; border-bottom: 2px solid var(--green); }
+.entity.person { background: rgba(251,146,60,.16); color: #fed7aa; border-bottom: 2px solid var(--orange); }
+.pos { background: rgba(192,132,252,.16); color: #e9d5ff; border-bottom: 2px solid var(--purple); }
+.chart-wrap { min-height: 230px; }
+canvas { width: 100%; max-width: 460px; height: 260px; display: block; margin: 0 auto; }
+.bar-list { display: grid; gap: 10px; }
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(145px, 230px) 1fr 42px;
+  align-items: center;
+  gap: 10px;
+  font-size: .9rem;
+}
+.bar-label { color: #dbeafe; overflow-wrap: anywhere; }
+.bar-bg {
+  height: 13px; border-radius: 999px; background: rgba(255,255,255,.09); overflow: hidden;
+}
+.bar-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, rgba(250,204,21,.95), rgba(251,146,60,.95));
+}
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1.2fr .75fr .75fr auto auto;
+  gap: 10px;
+  padding: 12px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(15,23,42,.94);
+  backdrop-filter: blur(12px);
+}
+input, select, button {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+option { color: #111827; }
+button { cursor: pointer; font-weight: 800; }
+button:hover { background: rgba(255,255,255,.12); }
+.comment-list { display: grid; gap: 12px; }
+.comment-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(17,24,39,.72);
+  overflow: hidden;
+}
+.comment-card[hidden] { display: none; }
+.comment-top {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.num {
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border-radius: 14px;
+  background: rgba(250,204,21,.12);
+  color: #fde68a; font-weight: 900;
+}
+.comment-body { padding: 16px; }
+.quote {
+  font-size: .98rem;
+  padding: 13px;
+  border-left: 4px solid rgba(250,204,21,.6);
+  background: rgba(255,255,255,.045);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+.small-title {
+  color: var(--muted);
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+.summary-list { margin: 0; padding-left: 18px; color: #d1d5db; }
+.summary-list li { margin: 7px 0; }
+.footer-note { color: var(--muted); font-size: .86rem; margin-top: 14px; }
+@media (max-width: 900px) {
+  .grid.stats, .grid.two, .meta-grid { grid-template-columns: 1fr; }
+  .controls { grid-template-columns: 1fr; position: static; }
+  .comment-top { grid-template-columns: 46px 1fr; }
+  .comment-top .right-badges { grid-column: 1 / -1; }
+  .bar-row { grid-template-columns: 1fr; gap: 5px; }
+}
+@media print {
+  body { background: #fff; color: #111827; }
+  .section, .card, .comment-card, .controls { box-shadow: none; background: #fff; color: #111827; }
+  .controls { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">Interactive sentiment report</div>
+  <h1>Mr. Biggs Customer Comments Analysis</h1>
+  <p class="subtitle">Comprehensive sentiment analysis of 52 customer comments from online/social sources, with individual comment-level sentiment, emotion, topics, entity highlights, POS highlights, and visual distributions.</p>
+</header>
+
+<main>
+  <section class="section">
+    <h2>Executive summary</h2>
+    <div class="grid stats">
+      <div class="card"><div class="metric">52</div><div class="metric-label">comments analyzed</div></div>
+      <div class="card"><div class="metric">21</div><div class="metric-label">positive comments (40.4%)</div></div>
+      <div class="card"><div class="metric">20</div><div class="metric-label">mixed comments (38.5%)</div></div>
+      <div class="card"><div class="metric">Nostalgia</div><div class="metric-label">dominant overall emotion</div></div>
+    </div>
+    <div class="grid two" style="margin-top:16px;">
+      <div class="card">
+        <h3>Overall customer sentiment</h3>
+        <p><strong>Mixed-positive nostalgia.</strong> Customers strongly admire the old Mr. Biggs experience, especially the meat pie, but they express concern and dissatisfaction about the brand’s decline, inactivity, inconsistent quality, and reduced presence.</p>
+        <p><strong>Are customers generally happy?</strong> Not fully. They are happy with the memory and legacy of Mr. Biggs, but not generally happy with the current state of the brand.</p>
+      </div>
+      <div class="card">
+        <h3>One specific recommendation</h3>
+        <p><strong>Relaunch the original meat pie as a hero product.</strong> Restore and standardize the original recipe, pilot it in visible Lagos/Abuja locations, enforce freshness/service SOPs, then run a nostalgia-led social campaign with a brand ambassador and branch-availability updates.</p>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--blue)"></i>Location entity</span>
+      <span><i class="dot" style="background:var(--green)"></i>Food/product entity</span>
+      <span><i class="dot" style="background:var(--orange)"></i>People/person entity</span>
+      <span><i class="dot" style="background:var(--purple)"></i>POS highlight</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Visual distributions</h2>
+    <div class="grid two">
+      <div class="card chart-wrap">
+        <h3>Sentiment distribution</h3>
+        <canvas id="sentimentPie" width="460" height="260"></canvas>
+      </div>
+      <div class="card">
+        <h3>Dominant emotion distribution</h3>
+        <div id="emotionBars" class="bar-list"></div>
+      </div>
+      <div class="card">
+        <h3>Most discussed topics</h3>
+        <div id="topicBars" class="bar-list"></div>
+      </div>
+      <div class="card">
+        <h3>Frequently mentioned products</h3>
+        <div id="foodBars" class="bar-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Findings</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Most discussed topics</h3>
+        <ul class="summary-list">
+          <li><strong>Nostalgia/childhood memories:</strong> the biggest theme; many comments mention “old days,” childhood, ads, school memories, and emotional attachment.</li>
+          <li><strong>Meat pie taste/quality:</strong> the dominant product conversation; customers describe it as big, sweet, unique, legendary, and unmatched.</li>
+          <li><strong>Brand decline/inactivity:</strong> customers ask whether Mr. Biggs is still around, inactive, sold, closed, or no longer visible.</li>
+          <li><strong>Quality consistency/franchising:</strong> a smaller but serious complaint links decline to franchise inconsistency, stale food, poor service, and facilities.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Complaints and compliments</h3>
+        <ul class="summary-list">
+          <li><strong>Main compliments:</strong> original meat pie, unique taste, aroma, crunchiness, scotch egg, fried rice, spicy chicken, spaghetti, ice cream, childhood experience, and memorable ads.</li>
+          <li><strong>Main complaints:</strong> hard/dry pastry, loss of original quality, inactive brand presence, poor freshness, deteriorating facilities, staff hospitality, hot drinks, stale/rotten food mentions, and lack of aggressive marketing.</li>
+          <li><strong>Overall emotion:</strong> nostalgia best represents the audience because most positive and mixed comments are anchored in remembered childhood experiences, former product quality, and longing for a comeback.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Individual comment analysis</h2>
+    <div class="controls">
+      <input id="searchBox" type="search" placeholder="Search comments, topics, entities...">
+      <select id="sentimentFilter">
+        <option value="">All sentiments</option>
+        <option value="positive">Positive</option>
+        <option value="mixed">Mixed</option>
+        <option value="negative">Negative</option>
+        <option value="neutral">Neutral</option>
+      </select>
+      <select id="emotionFilter">
+        <option value="">All emotions</option>
+      </select>
+      <button id="expandAll">Expand all</button>
+      <button id="printReport">Print</button>
+    </div>
+    <p class="footer-note"><span id="visibleCount">52</span> of 52 comments visible.</p>
+    <div id="commentList" class="comment-list"></div>
+  </section>
+</main>
+
+<script>
+const comments = [{"id": 1, "text": "There are non, Mr biggs had quality meat pie filled with meat and big size and quantity. Others are just small sized glorified potato pies.", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality", "Product comparison"], "entities": {"location": [], "food": ["meat pie", "meat", "potato pies"], "people": []}, "pos": "quality (adjective), filled (verb), big/small-sized (adjectives), glorified (adjective)", "highlighted": "There are non, Mr biggs had <span class=\"pos\" title=\"POS highlight\">quality</span> <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> <span class=\"pos\" title=\"POS highlight\">filled</span> with <span class=\"entity food\" title=\"Food/product entity\">meat</span> and <span class=\"pos\" title=\"POS highlight\">big</span> size and quantity. Others are just <span class=\"pos\" title=\"POS highlight\">small sized</span> <span class=\"pos\" title=\"POS highlight\">glorified</span> <span class=\"entity food\" title=\"Food/product entity\">potato pies</span>."}, {"id": 2, "text": "Omo prime Mr Biggs oh that we save to go their meat pie and sprit.", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Nostalgia/childhood memories", "Meat pie taste/quality"], "entities": {"location": [], "food": ["meat pie", "Sprite"], "people": []}, "pos": "prime (adjective), save/go (verbs)", "highlighted": "Omo <span class=\"pos\" title=\"POS highlight\">prime</span> Mr Biggs oh that we <span class=\"pos\" title=\"POS highlight\">save</span> to <span class=\"pos\" title=\"POS highlight\">go</span> their <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> and <span class=\"entity food\" title=\"Food/product entity\">sprit</span>."}, {"id": 3, "text": "Seriously there's nothing spectacular about Mr Biggs' meat pies, I honestly have eaten better meat pies.", "sentiment": "negative", "emotion": "Disappointment", "topics": ["Meat pie taste/quality", "Product comparison"], "entities": {"location": [], "food": ["meat pies"], "people": []}, "pos": "spectacular/better (adjectives), eaten (verb)", "highlighted": "Seriously there&#x27;s nothing <span class=\"pos\" title=\"POS highlight\">spectacular</span> about Mr Biggs&#x27; <span class=\"entity food\" title=\"Food/product entity\">meat pies</span>, I <span class=\"pos\" title=\"POS highlight\">honestly</span> <span class=\"pos\" title=\"POS highlight\">have</span> <span class=\"pos\" title=\"POS highlight\">eaten</span> <span class=\"pos\" title=\"POS highlight\">better</span> <span class=\"entity food\" title=\"Food/product entity\">meat pies</span>."}, {"id": 4, "text": "Which nostalgia. Their meat pie was good, the only restaurant that could contend with them was tantalizers. Y'all are saying it wasn't now because they're no more.", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Nostalgia/childhood memories", "Competition", "Meat pie taste/quality"], "entities": {"location": [], "food": ["meat pie"], "people": ["Y'all"]}, "pos": "good (adjective), contend/saying (verbs), nostalgia (noun)", "highlighted": "Which <span class=\"pos\" title=\"POS highlight\">nostalgia</span>. Their <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> was <span class=\"pos\" title=\"POS highlight\">good</span>, the only restaurant that could <span class=\"pos\" title=\"POS highlight\">contend</span> with them was tantalizers. <span class=\"entity person\" title=\"People/person entity\">Y&#x27;all</span> are <span class=\"pos\" title=\"POS highlight\">saying</span> it wasn&#x27;t now because they&#x27;re no more."}, {"id": 5, "text": "Mr Biggs was the best before they started to franchise their name to anyone who could pay.", "sentiment": "mixed", "emotion": "Frustration", "topics": ["Franchising/quality consistency", "Brand decline/inactivity"], "entities": {"location": [], "food": [], "people": []}, "pos": "best (adjective), started/franchise/pay (verbs)", "highlighted": "Mr Biggs was the <span class=\"pos\" title=\"POS highlight\">best</span> before they <span class=\"pos\" title=\"POS highlight\">started</span> to <span class=\"pos\" title=\"POS highlight\">franchise</span> their name to anyone who could <span class=\"pos\" title=\"POS highlight\">pay</span>."}, {"id": 6, "text": "Their meat pie was big and sweet 😋 I miss them oooo who knows if they are the chicken republic and we don't know.", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories", "Competition"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "big/sweet (adjectives), miss/knows (verbs)", "highlighted": "Their <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> was <span class=\"pos\" title=\"POS highlight\">big</span> and <span class=\"pos\" title=\"POS highlight\">sweet</span> 😋 I <span class=\"pos\" title=\"POS highlight\">miss</span> them oooo who <span class=\"pos\" title=\"POS highlight\">knows</span> if they are the chicken republic and we don&#x27;t <span class=\"pos\" title=\"POS highlight\">know</span>."}, {"id": 7, "text": "Can never get the taste of Mr Biggs meat pie outta my mind....nobody has beaten that record so far", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "taste/record (nouns), beaten (verb)", "highlighted": "Can never <span class=\"pos\" title=\"POS highlight\">get</span> the <span class=\"pos\" title=\"POS highlight\">taste</span> of Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> outta my mind....<span class=\"entity person\" title=\"People/person entity\">nobody</span> has <span class=\"pos\" title=\"POS highlight\">beaten</span> that <span class=\"pos\" title=\"POS highlight\">record</span> so far"}, {"id": 8, "text": "Na during Mr Biggs we know wetin be meat pie.....now na potato pie,carrot pie,cabbage pie we de eat.", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Product comparison", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie", "potato pie", "carrot pie", "cabbage pie"], "people": []}, "pos": "know/eat (verbs), now (adverb)", "highlighted": "Na during Mr Biggs we <span class=\"pos\" title=\"POS highlight\">know</span> wetin be <span class=\"entity food\" title=\"Food/product entity\">meat pie</span>.....now na <span class=\"entity food\" title=\"Food/product entity\">potato pie</span>,<span class=\"entity food\" title=\"Food/product entity\">carrot pie</span>,<span class=\"entity food\" title=\"Food/product entity\">cabbage pie</span> we de <span class=\"pos\" title=\"POS highlight\">eat</span>."}, {"id": 9, "text": "I never liked Mr.Biggs pastries so I'm amazed at all these comments they make the dough too hard n dry", "sentiment": "negative", "emotion": "Dissatisfaction", "topics": ["Pastry quality complaint", "Product texture"], "entities": {"location": [], "food": ["pastries", "dough"], "people": []}, "pos": "liked/make (verbs), hard/dry (adjectives), amazed (adjective)", "highlighted": "I never <span class=\"pos\" title=\"POS highlight\">liked</span> Mr.Biggs <span class=\"entity food\" title=\"Food/product entity\">pastries</span> so I&#x27;m <span class=\"pos\" title=\"POS highlight\">amazed</span> at all these comments they <span class=\"pos\" title=\"POS highlight\">make</span> the <span class=\"entity food\" title=\"Food/product entity\">dough</span> too <span class=\"pos\" title=\"POS highlight\">hard</span> n <span class=\"pos\" title=\"POS highlight\">dry</span>"}, {"id": 10, "text": "That meat pie! The nostalgia", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "nostalgia (noun)", "highlighted": "That <span class=\"entity food\" title=\"Food/product entity\">meat pie</span>! The <span class=\"pos\" title=\"POS highlight\">nostalgia</span>"}, {"id": 11, "text": "Nobody is talking about Mr Biggs scotch egg ", "sentiment": "neutral", "emotion": "Curiosity", "topics": ["Other products", "Product recall"], "entities": {"location": [], "food": ["scotch egg"], "people": ["Nobody"]}, "pos": "talking (verb)", "highlighted": "<span class=\"entity person\" title=\"People/person entity\">Nobody</span> is <span class=\"pos\" title=\"POS highlight\">talking</span> about Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">scotch egg</span> "}, {"id": 12, "text": "Omo prime Mr Biggs meat pie 💯", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "prime (adjective)", "highlighted": "Omo <span class=\"pos\" title=\"POS highlight\">prime</span> Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> 💯"}, {"id": 13, "text": "Mr Biggs meat pie had a unique taste too! It was just different! Not yet found why it had that unique taste. I remember it had a unique brownish colour… it was always yum and a win win!!", "sentiment": "positive", "emotion": "Delight", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "unique/different/brownish/yum (adjectives), remember/found (verbs)", "highlighted": "Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> had a <span class=\"pos\" title=\"POS highlight\">unique</span> <span class=\"pos\" title=\"POS highlight\">taste</span> too! It was just <span class=\"pos\" title=\"POS highlight\">different</span>! Not yet <span class=\"pos\" title=\"POS highlight\">found</span> why it had that <span class=\"pos\" title=\"POS highlight\">unique</span> <span class=\"pos\" title=\"POS highlight\">taste</span>. I <span class=\"pos\" title=\"POS highlight\">remember</span> it had a <span class=\"pos\" title=\"POS highlight\">unique</span> <span class=\"pos\" title=\"POS highlight\">brownish</span> colour… it was <span class=\"pos\" title=\"POS highlight\">always</span> <span class=\"pos\" title=\"POS highlight\">yum</span> and a win win!!"}, {"id": 14, "text": "No meat pie has defeated Mr Biggs' in taste", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality", "Product comparison"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "defeated (verb), taste (noun)", "highlighted": "No <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> has <span class=\"pos\" title=\"POS highlight\">defeated</span> Mr Biggs&#x27; in <span class=\"pos\" title=\"POS highlight\">taste</span>"}, {"id": 15, "text": "Anybody who says that there are better meat pies than the then Mr. Biggs is a Genz, and that's on period!", "sentiment": "positive", "emotion": "Defensiveness", "topics": ["Meat pie taste/quality", "Generational nostalgia"], "entities": {"location": [], "food": ["meat pies"], "people": ["Genz"]}, "pos": "better (adjective), says (verb)", "highlighted": "Anybody who <span class=\"pos\" title=\"POS highlight\">says</span> that there are <span class=\"pos\" title=\"POS highlight\">better</span> <span class=\"entity food\" title=\"Food/product entity\">meat pies</span> than the then Mr. Biggs is a <span class=\"entity person\" title=\"People/person entity\">Genz</span>, and that&#x27;s on period!"}, {"id": 16, "text": "Mr Biggs meat pie was legendary. The crunchiness and the aroma was definitely one of a kind.... nostalgic", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "legendary/nostalgic (adjectives), crunchiness/aroma (nouns)", "highlighted": "Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> was <span class=\"pos\" title=\"POS highlight\">legendary</span>. The <span class=\"pos\" title=\"POS highlight\">crunchiness</span> and the <span class=\"pos\" title=\"POS highlight\">aroma</span> was <span class=\"pos\" title=\"POS highlight\">definitely</span> one of a kind.... <span class=\"pos\" title=\"POS highlight\">nostalgic</span>"}, {"id": 17, "text": "Mr. Biggs meat pie is the goat", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "goat (noun/slang compliment)", "highlighted": "Mr. Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> is the <span class=\"pos\" title=\"POS highlight\">goat</span>"}, {"id": 18, "text": "I  can still remember mr Biggs meat pie taste. Chicken George scotch egg nko. Omo…I miss the good old days.😭😭😭", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Other products", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie", "Chicken George scotch egg"], "people": []}, "pos": "remember/miss (verbs), good/old (adjectives), taste/days (nouns)", "highlighted": "I  can <span class=\"pos\" title=\"POS highlight\">still</span> <span class=\"pos\" title=\"POS highlight\">remember</span> mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> <span class=\"pos\" title=\"POS highlight\">taste</span>. <span class=\"entity food\" title=\"Food/product entity\">Chicken George scotch egg</span> nko. Omo…I <span class=\"pos\" title=\"POS highlight\">miss</span> the <span class=\"pos\" title=\"POS highlight\">good</span> <span class=\"pos\" title=\"POS highlight\">old</span> <span class=\"pos\" title=\"POS highlight\">days</span>.😭😭😭"}, {"id": 19, "text": "Yes o, Mr Biggs meat pie was everything back then.", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "everything (noun/pronoun emphasis), back then (adverbial phrase)", "highlighted": "Yes o, Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> was <span class=\"pos\" title=\"POS highlight\">everything</span> back then."}, {"id": 20, "text": "Yes Mr Bigg's meat pie was my favorite snacks then❤️", "sentiment": "positive", "emotion": "Affection", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie", "snacks"], "people": []}, "pos": "favorite (adjective)", "highlighted": "Yes Mr Bigg&#x27;s <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> was my <span class=\"pos\" title=\"POS highlight\">favorite</span> <span class=\"entity food\" title=\"Food/product entity\">snacks</span> then❤️"}, {"id": 21, "text": "I went to Naija in 2020, and I regret not going into the Mr. Biggs I saw at the airport in Lagos. Definitely going next time.", "sentiment": "mixed", "emotion": "Regret", "topics": ["Locations/branches", "Brand access", "Nostalgia/childhood memories"], "entities": {"location": ["Naija", "Lagos", "airport in Lagos"], "food": [], "people": []}, "pos": "went/regret/saw/going (verbs), definitely (adverb)", "highlighted": "I <span class=\"pos\" title=\"POS highlight\">went</span> to <span class=\"entity location\" title=\"Location entity\">Naija</span> in 2020, and I <span class=\"pos\" title=\"POS highlight\">regret</span> not <span class=\"pos\" title=\"POS highlight\">going</span> into the Mr. Biggs I <span class=\"pos\" title=\"POS highlight\">saw</span> at the <span class=\"entity location\" title=\"Location entity\">airport in Lagos</span>. <span class=\"pos\" title=\"POS highlight\">Definitely</span> <span class=\"pos\" title=\"POS highlight\">going</span> next time."}, {"id": 22, "text": "Mr Biggs used to be the place….. It was the very place💔", "sentiment": "mixed", "emotion": "Sadness", "topics": ["Brand decline/inactivity", "Nostalgia/childhood memories"], "entities": {"location": [], "food": [], "people": []}, "pos": "used to be (verb phrase), place (noun)", "highlighted": "Mr Biggs <span class=\"pos\" title=\"POS highlight\">used to be</span> the <span class=\"pos\" title=\"POS highlight\">place</span>….. It was the very <span class=\"pos\" title=\"POS highlight\">place</span>💔"}, {"id": 23, "text": "Great video Bro! I think our childhood memory is long gone ooooo. Growing up, Mr.Biggs AYA round about Abuja was a banger!!!!", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Locations/branches", "Nostalgia/childhood memories", "Content/video feedback"], "entities": {"location": ["AYA round about Abuja", "Abuja"], "food": [], "people": ["Bro"]}, "pos": "great/long gone/banger (adjectives/slang), think/growing (verbs)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Great</span> video <span class=\"entity person\" title=\"People/person entity\">Bro</span>! I think our <span class=\"pos\" title=\"POS highlight\">childhood</span> memory is <span class=\"pos\" title=\"POS highlight\">long gone</span> ooooo. <span class=\"pos\" title=\"POS highlight\">Growing</span> up, Mr.Biggs <span class=\"entity location\" title=\"Location entity\">AYA round about Abuja</span> was a <span class=\"pos\" title=\"POS highlight\">banger</span>!!!!"}, {"id": 24, "text": "this is a very nice documentary...I like how you ended it . I use to think what happened to mr Biggs ,its so sad", "sentiment": "mixed", "emotion": "Sadness", "topics": ["Content/video feedback", "Brand decline/inactivity"], "entities": {"location": [], "food": [], "people": []}, "pos": "nice/sad (adjectives), like/ended/think/happened (verbs)", "highlighted": "this is a very <span class=\"pos\" title=\"POS highlight\">nice</span> documentary...I like how you ended it . I use to think what <span class=\"pos\" title=\"POS highlight\">happened</span> to mr Biggs ,its so <span class=\"pos\" title=\"POS highlight\">sad</span>"}, {"id": 25, "text": "Great breakdown. I haven't been back in Nigeria in over 15yrs, came back and was really surprised that Mr. Biggs is no more, even Tantalizers was starting to fade out.", "sentiment": "mixed", "emotion": "Surprise", "topics": ["Locations/branches", "Brand decline/inactivity", "Competition"], "entities": {"location": ["Nigeria"], "food": [], "people": []}, "pos": "great/surprised (adjectives), came back/starting/fade out (verbs)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Great</span> breakdown. I haven&#x27;t been back in <span class=\"entity location\" title=\"Location entity\">Nigeria</span> in over 15yrs, came back and was <span class=\"pos\" title=\"POS highlight\">really</span> <span class=\"pos\" title=\"POS highlight\">surprised</span> that Mr. Biggs is no more, even Tantalizers was <span class=\"pos\" title=\"POS highlight\">starting</span> to <span class=\"pos\" title=\"POS highlight\">fade out</span>."}, {"id": 26, "text": "Mr Biggs was very much dead before kfc and chicken republic ever came in", "sentiment": "negative", "emotion": "Resignation", "topics": ["Brand decline/inactivity", "Competition"], "entities": {"location": [], "food": [], "people": []}, "pos": "dead (adjective), came in (verb phrase)", "highlighted": "Mr Biggs was very much <span class=\"pos\" title=\"POS highlight\">dead</span> before kfc and chicken republic <span class=\"pos\" title=\"POS highlight\">ever</span> <span class=\"pos\" title=\"POS highlight\">came in</span>"}, {"id": 27, "text": "Even when growing up Mr Biggs was my favorite my dad always get us Meatpie from Mr b I remembered keeping the nylon just  to take it to school as proof!!!!!!", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Nostalgia/childhood memories", "Meat pie taste/quality"], "entities": {"location": [], "food": ["Meatpie"], "people": ["dad"]}, "pos": "favorite (adjective), growing/get/remembered/keeping/take (verbs), proof (noun)", "highlighted": "Even when <span class=\"pos\" title=\"POS highlight\">growing</span> up Mr Biggs was my <span class=\"pos\" title=\"POS highlight\">favorite</span> my <span class=\"entity person\" title=\"People/person entity\">dad</span> <span class=\"pos\" title=\"POS highlight\">always</span> <span class=\"pos\" title=\"POS highlight\">get</span> us <span class=\"entity food\" title=\"Food/product entity\">Meatpie</span> from Mr b I <span class=\"pos\" title=\"POS highlight\">remembered</span> <span class=\"pos\" title=\"POS highlight\">keeping</span> the nylon just  to <span class=\"pos\" title=\"POS highlight\">take</span> it to school as <span class=\"pos\" title=\"POS highlight\">proof</span>!!!!!!"}, {"id": 28, "text": "To this day, I haven't tasted meat pie like Mr Bigg's", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Meat pie taste/quality", "Product comparison"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "tasted (verb), like (preposition/comparison)", "highlighted": "To this day, I haven&#x27;t <span class=\"pos\" title=\"POS highlight\">tasted</span> <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> like Mr Bigg&#x27;s"}, {"id": 29, "text": "The good old days, hearing Mr Biggs ads on TV alone I run from the room into the parlor to watch it", "sentiment": "positive", "emotion": "Nostalgia", "topics": ["Nostalgia/childhood memories", "Advertising recall"], "entities": {"location": [], "food": [], "people": []}, "pos": "good/old (adjectives), hearing/run/watch (verbs), ads/TV/room/parlor (nouns)", "highlighted": "The <span class=\"pos\" title=\"POS highlight\">good</span> <span class=\"pos\" title=\"POS highlight\">old</span> <span class=\"pos\" title=\"POS highlight\">days</span>, <span class=\"pos\" title=\"POS highlight\">hearing</span> Mr Biggs ads on TV alone I <span class=\"pos\" title=\"POS highlight\">run</span> from the room into the parlor to <span class=\"pos\" title=\"POS highlight\">watch</span> it"}, {"id": 30, "text": "Before I watch the video, I’ll say this. Mr. Biggs was very popular in my country🇬🇭and I had no idea it was a Nigerian chain. Some core memories from childhood are coming back up🥹\nThe food was so good. Our location has fried rice and it was my favorite!😩😩I remember being heartbroken when they closed.", "sentiment": "mixed", "emotion": "Nostalgia", "topics": ["Locations/branches", "Nostalgia/childhood memories", "Other products", "Brand decline/inactivity"], "entities": {"location": ["my country🇬🇭", "Nigerian"], "food": ["food", "fried rice"], "people": []}, "pos": "popular/good/favorite/heartbroken (adjectives), watch/remember/closed (verbs), memories/childhood/location (nouns)", "highlighted": "Before I <span class=\"pos\" title=\"POS highlight\">watch</span> the video, I’ll say this. Mr. Biggs was very <span class=\"pos\" title=\"POS highlight\">popular</span> in my country🇬🇭and I had no idea it was a <span class=\"entity location\" title=\"Location entity\">Nigerian</span> chain. Some core <span class=\"pos\" title=\"POS highlight\">memories</span> from <span class=\"pos\" title=\"POS highlight\">childhood</span> are coming back up🥹<br>The <span class=\"entity food\" title=\"Food/product entity\">food</span> was so <span class=\"pos\" title=\"POS highlight\">good</span>. Our location has <span class=\"entity food\" title=\"Food/product entity\">fried rice</span> and it was my <span class=\"pos\" title=\"POS highlight\">favorite</span>!😩😩I <span class=\"pos\" title=\"POS highlight\">remember</span> being <span class=\"pos\" title=\"POS highlight\">heartbroken</span> when they <span class=\"pos\" title=\"POS highlight\">closed</span>."}, {"id": 31, "text": "Nice analysis. I..I can only speak for Jos, Kaduna and Zaria where I have lived..", "sentiment": "neutral", "emotion": "Informative", "topics": ["Locations/branches", "Content/video feedback"], "entities": {"location": ["Jos", "Kaduna", "Zaria"], "food": [], "people": []}, "pos": "nice (adjective), speak/lived (verbs)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Nice</span> analysis. I..I can only <span class=\"pos\" title=\"POS highlight\">speak</span> for <span class=\"entity location\" title=\"Location entity\">Jos</span>, <span class=\"entity location\" title=\"Location entity\">Kaduna</span> and <span class=\"entity location\" title=\"Location entity\">Zaria</span> <span class=\"pos\" title=\"POS highlight\">where</span> I <span class=\"pos\" title=\"POS highlight\">have</span> <span class=\"pos\" title=\"POS highlight\">lived</span>.."}, {"id": 32, "text": "Competition contributed less to Mr Biggs' downfall than franchising...that practically destroyed quality and consistency. At a point you know that any Mr Biggs you go to food will taste the same. But all of a sudden, you had to start picking and choosing because of freshness, staff hospitality and deteriorating facilities. If I'm spending money I'd rather eat fresh food and cold drinks served with a smile and not coming to sweat on a line to buy rotten fried rice/stale hot sour salads/ meatless pies/hot drinks..served by staff that seem to be having personal problems in their lives and feel the need to transfer their aggression to customers.", "sentiment": "negative", "emotion": "Frustration", "topics": ["Franchising/quality consistency", "Service/facility complaints", "Product freshness complaint", "Brand decline/inactivity"], "entities": {"location": [], "food": ["food", "fresh food", "cold drinks", "fried rice", "hot sour salads", "meatless pies", "hot drinks"], "people": ["staff", "customers"]}, "pos": "contributed/destroyed/picking/choosing/spending/eat/served/transfer (verbs), fresh/cold/rotten/stale/hot/deteriorating (adjectives), quality/consistency/freshness/hospitality/facilities/aggression (nouns)", "highlighted": "Competition <span class=\"pos\" title=\"POS highlight\">contributed</span> less to Mr Biggs&#x27; downfall than franchising...that practically <span class=\"pos\" title=\"POS highlight\">destroyed</span> <span class=\"pos\" title=\"POS highlight\">quality</span> and <span class=\"pos\" title=\"POS highlight\">consistency</span>. At a point you <span class=\"pos\" title=\"POS highlight\">know</span> that any Mr Biggs you <span class=\"pos\" title=\"POS highlight\">go</span> to <span class=\"entity food\" title=\"Food/product entity\">food</span> will <span class=\"pos\" title=\"POS highlight\">taste</span> the same. But all of a sudden, you had to start <span class=\"pos\" title=\"POS highlight\">picking</span> and <span class=\"pos\" title=\"POS highlight\">choosing</span> because of <span class=\"pos\" title=\"POS highlight\">freshness</span>, <span class=\"entity person\" title=\"People/person entity\">staff</span> <span class=\"pos\" title=\"POS highlight\">hospitality</span> and <span class=\"pos\" title=\"POS highlight\">deteriorating</span> <span class=\"pos\" title=\"POS highlight\">facilities</span>. If I&#x27;m <span class=\"pos\" title=\"POS highlight\">spending</span> money I&#x27;d rather <span class=\"pos\" title=\"POS highlight\">eat</span> <span class=\"entity food\" title=\"Food/product entity\">fresh food</span> and <span class=\"entity food\" title=\"Food/product entity\">cold drinks</span> <span class=\"pos\" title=\"POS highlight\">served</span> with a smile and not coming to sweat on a line to buy <span class=\"entity food\" title=\"Food/product entity\">rotten fried rice</span>/<span class=\"entity food\" title=\"Food/product entity\">stale hot sour salads</span>/ <span class=\"entity food\" title=\"Food/product entity\">meatless pies</span>/<span class=\"entity food\" title=\"Food/product entity\">hot drinks</span>..<span class=\"pos\" title=\"POS highlight\">served</span> by <span class=\"entity person\" title=\"People/person entity\">staff</span> that seem to be having personal problems in their lives and feel the <span class=\"pos\" title=\"POS highlight\">need</span> to <span class=\"pos\" title=\"POS highlight\">transfer</span> their <span class=\"pos\" title=\"POS highlight\">aggression</span> to <span class=\"entity person\" title=\"People/person entity\">customers</span>."}, {"id": 33, "text": "Item 7 might not be very small, so the competition could become even tougher. Ever since Mr. Biggs closed down, I haven't come across a Meat Pie that matches theirs. Their meat pies were wonderfully meaty and packed with flavor, and I can still recall how delicious they were. Perhaps they should consider starting from there again.", "sentiment": "mixed", "emotion": "Hope", "topics": ["Competition", "Meat pie taste/quality", "Comeback/relaunch hope"], "entities": {"location": [], "food": ["Meat Pie", "meat pies"], "people": []}, "pos": "small/tougher/meaty/packed/delicious (adjectives), closed down/matches/recall/consider/starting (verbs)", "highlighted": "Item 7 might not be very <span class=\"pos\" title=\"POS highlight\">small</span>, so the competition could become even <span class=\"pos\" title=\"POS highlight\">tougher</span>. <span class=\"pos\" title=\"POS highlight\">Ever</span> since Mr. Biggs <span class=\"pos\" title=\"POS highlight\">closed down</span>, I haven&#x27;t come across a <span class=\"entity food\" title=\"Food/product entity\">Meat Pie</span> that <span class=\"pos\" title=\"POS highlight\">matches</span> theirs. Their <span class=\"entity food\" title=\"Food/product entity\">meat pies</span> were wonderfully <span class=\"pos\" title=\"POS highlight\">meaty</span> and <span class=\"pos\" title=\"POS highlight\">packed</span> with flavor, and I can <span class=\"pos\" title=\"POS highlight\">still</span> <span class=\"pos\" title=\"POS highlight\">recall</span> how <span class=\"pos\" title=\"POS highlight\">delicious</span> they were. Perhaps they should <span class=\"pos\" title=\"POS highlight\">consider</span> <span class=\"pos\" title=\"POS highlight\">starting</span> from there again."}, {"id": 34, "text": "What happened to you guys? You guys gave me good memories ooo. I pray your business comes back alive. I hope to visit whenever I return to Nigeria 👏", "sentiment": "mixed", "emotion": "Hope", "topics": ["Brand decline/inactivity", "Comeback/relaunch hope", "Nostalgia/childhood memories", "Locations/branches"], "entities": {"location": ["Nigeria"], "food": [], "people": ["guys"]}, "pos": "happened/gave/pray/comes back/hope/visit/return (verbs), good/alive (adjectives), memories/business (nouns)", "highlighted": "What <span class=\"pos\" title=\"POS highlight\">happened</span> to you <span class=\"entity person\" title=\"People/person entity\">guys</span>? You <span class=\"entity person\" title=\"People/person entity\">guys</span> <span class=\"pos\" title=\"POS highlight\">gave</span> me <span class=\"pos\" title=\"POS highlight\">good</span> <span class=\"pos\" title=\"POS highlight\">memories</span> ooo. I <span class=\"pos\" title=\"POS highlight\">pray</span> your business <span class=\"pos\" title=\"POS highlight\">comes back</span> <span class=\"pos\" title=\"POS highlight\">alive</span>. I <span class=\"pos\" title=\"POS highlight\">hope</span> to <span class=\"pos\" title=\"POS highlight\">visit</span> whenever I <span class=\"pos\" title=\"POS highlight\">return</span> to <span class=\"entity location\" title=\"Location entity\">Nigeria</span> 👏"}, {"id": 35, "text": "A great Monday starts with a Bigg bite! 😋", "sentiment": "positive", "emotion": "Joy", "topics": ["Brand engagement", "Other products"], "entities": {"location": [], "food": ["Bigg bite"], "people": []}, "pos": "great (adjective), starts (verb)", "highlighted": "A <span class=\"pos\" title=\"POS highlight\">great</span> Monday <span class=\"pos\" title=\"POS highlight\">starts</span> with a <span class=\"entity food\" title=\"Food/product entity\">Bigg bite</span>! 😋"}, {"id": 36, "text": "I hope you guys come back with best meal n snacks, growing up with Mr Biggs is actually big moment", "sentiment": "mixed", "emotion": "Hope", "topics": ["Comeback/relaunch hope", "Nostalgia/childhood memories", "Other products"], "entities": {"location": [], "food": ["meal", "snacks"], "people": ["guys"]}, "pos": "hope/come back/growing (verbs), best/big (adjectives), moment (noun)", "highlighted": "I <span class=\"pos\" title=\"POS highlight\">hope</span> you <span class=\"entity person\" title=\"People/person entity\">guys</span> <span class=\"pos\" title=\"POS highlight\">come back</span> with <span class=\"pos\" title=\"POS highlight\">best</span> <span class=\"entity food\" title=\"Food/product entity\">meal</span> n <span class=\"entity food\" title=\"Food/product entity\">snacks</span>, <span class=\"pos\" title=\"POS highlight\">growing</span> up with Mr Biggs is actually <span class=\"pos\" title=\"POS highlight\">big</span> <span class=\"pos\" title=\"POS highlight\">moment</span>"}, {"id": 37, "text": "Oh, my Mr Biggs, na WA o. I miss you guys!! A childhood fast food brand!!", "sentiment": "mixed", "emotion": "Longing", "topics": ["Nostalgia/childhood memories", "Brand decline/inactivity"], "entities": {"location": [], "food": ["fast food"], "people": ["guys"]}, "pos": "miss (verb), childhood/brand (nouns)", "highlighted": "Oh, my Mr Biggs, na WA o. I <span class=\"pos\" title=\"POS highlight\">miss</span> you <span class=\"entity person\" title=\"People/person entity\">guys</span>!! A <span class=\"pos\" title=\"POS highlight\">childhood</span> <span class=\"entity food\" title=\"Food/product entity\">fast food</span> <span class=\"pos\" title=\"POS highlight\">brand</span>!!"}, {"id": 38, "text": "It’s the spicy chicken for me 🙌", "sentiment": "positive", "emotion": "Excitement", "topics": ["Other products", "Product taste/quality"], "entities": {"location": [], "food": ["spicy chicken"], "people": []}, "pos": "spicy (adjective)", "highlighted": "It’s the <span class=\"entity food\" title=\"Food/product entity\">spicy chicken</span> for me 🙌"}, {"id": 39, "text": "Always good 🤤", "sentiment": "positive", "emotion": "Satisfaction", "topics": ["General satisfaction"], "entities": {"location": [], "food": [], "people": []}, "pos": "always (adverb), good (adjective)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Always</span> <span class=\"pos\" title=\"POS highlight\">good</span> 🤤"}, {"id": 40, "text": "Normally you guys have the best pie ever 🔥", "sentiment": "positive", "emotion": "Admiration", "topics": ["Meat pie taste/quality", "General satisfaction"], "entities": {"location": [], "food": ["pie"], "people": ["guys"]}, "pos": "normally/ever (adverbs), best (adjective), have (verb)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Normally</span> you <span class=\"entity person\" title=\"People/person entity\">guys</span> <span class=\"pos\" title=\"POS highlight\">have</span> the <span class=\"pos\" title=\"POS highlight\">best</span> <span class=\"entity food\" title=\"Food/product entity\">pie</span> <span class=\"pos\" title=\"POS highlight\">ever</span> 🔥"}, {"id": 41, "text": "The real og I miss Mr Biggs meat pie", "sentiment": "mixed", "emotion": "Longing", "topics": ["Meat pie taste/quality", "Nostalgia/childhood memories"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "real (adjective), miss (verb), og (noun/slang)", "highlighted": "The <span class=\"pos\" title=\"POS highlight\">real</span> <span class=\"pos\" title=\"POS highlight\">og</span> I <span class=\"pos\" title=\"POS highlight\">miss</span> Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">meat pie</span>"}, {"id": 42, "text": "What is happening, Mr Biggs? For like 2years now you've not been active everywhere, have you sold the company???", "sentiment": "negative", "emotion": "Concern", "topics": ["Brand decline/inactivity", "Social media inactivity"], "entities": {"location": [], "food": [], "people": []}, "pos": "happening/active/sold (verbs/adjective), company (noun)", "highlighted": "What is <span class=\"pos\" title=\"POS highlight\">happening</span>, Mr Biggs? For like 2years now you&#x27;ve not been <span class=\"pos\" title=\"POS highlight\">active</span> everywhere, <span class=\"pos\" title=\"POS highlight\">have</span> you <span class=\"pos\" title=\"POS highlight\">sold</span> the <span class=\"pos\" title=\"POS highlight\">company</span>???"}, {"id": 43, "text": "Wow!!! Mr Biggs still dey......? Chai those days una ice cream and meat pie too make sense....", "sentiment": "mixed", "emotion": "Surprise", "topics": ["Nostalgia/childhood memories", "Other products", "Meat pie taste/quality", "Brand awareness"], "entities": {"location": [], "food": ["ice cream", "meat pie"], "people": []}, "pos": "still (adverb), make sense (verb phrase)", "highlighted": "Wow!!! Mr Biggs <span class=\"pos\" title=\"POS highlight\">still</span> dey......? Chai those <span class=\"pos\" title=\"POS highlight\">days</span> una <span class=\"entity food\" title=\"Food/product entity\">ice cream</span> and <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> too <span class=\"pos\" title=\"POS highlight\">make sense</span>...."}, {"id": 44, "text": "Are you people still around??? Chai our Mr. Biggs", "sentiment": "negative", "emotion": "Concern", "topics": ["Brand decline/inactivity", "Brand awareness"], "entities": {"location": [], "food": [], "people": ["people"]}, "pos": "still (adverb), around (adjective/adverbial), are (verb)", "highlighted": "Are you <span class=\"entity person\" title=\"People/person entity\">people</span> <span class=\"pos\" title=\"POS highlight\">still</span> <span class=\"pos\" title=\"POS highlight\">around</span>??? Chai our Mr. Biggs"}, {"id": 45, "text": "Nostalgia.... Damn I really miss you guys so so much. I was a huge mr biggs person when I was a kid", "sentiment": "mixed", "emotion": "Longing", "topics": ["Nostalgia/childhood memories", "Brand affinity"], "entities": {"location": [], "food": [], "people": ["guys", "kid"]}, "pos": "nostalgia (noun), really/so much (adverbs), miss (verb), huge (adjective)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Nostalgia</span>.... Damn I <span class=\"pos\" title=\"POS highlight\">really</span> <span class=\"pos\" title=\"POS highlight\">miss</span> you <span class=\"entity person\" title=\"People/person entity\">guys</span> so <span class=\"pos\" title=\"POS highlight\">so much</span>. I was a <span class=\"pos\" title=\"POS highlight\">huge</span> mr biggs person when I was a <span class=\"entity person\" title=\"People/person entity\">kid</span>"}, {"id": 46, "text": "Wow I had to follow immediately, HI Mr Biggs, I’ve had good Childhood memories with your brand", "sentiment": "positive", "emotion": "Delight", "topics": ["Social media engagement", "Nostalgia/childhood memories", "Brand affinity"], "entities": {"location": [], "food": [], "people": []}, "pos": "follow (verb), immediately (adverb), good (adjective), memories/brand (nouns)", "highlighted": "Wow I had to <span class=\"pos\" title=\"POS highlight\">follow</span> <span class=\"pos\" title=\"POS highlight\">immediately</span>, HI Mr Biggs, I’ve had <span class=\"pos\" title=\"POS highlight\">good</span> <span class=\"pos\" title=\"POS highlight\">Childhood</span> <span class=\"pos\" title=\"POS highlight\">memories</span> with your <span class=\"pos\" title=\"POS highlight\">brand</span>"}, {"id": 47, "text": "Mr Biggs, you need brand ambassador", "sentiment": "neutral", "emotion": "Suggestive", "topics": ["Marketing/brand revival", "Brand ambassador"], "entities": {"location": [], "food": [], "people": ["brand ambassador"]}, "pos": "need (verb), brand ambassador (noun phrase)", "highlighted": "Mr Biggs, you <span class=\"pos\" title=\"POS highlight\">need</span> <span class=\"entity person\" title=\"People/person entity\">brand ambassador</span>"}, {"id": 48, "text": "Bring back the original meat pie recipe", "sentiment": "mixed", "emotion": "Hope", "topics": ["Comeback/relaunch hope", "Meat pie taste/quality", "Recipe restoration"], "entities": {"location": [], "food": ["meat pie"], "people": []}, "pos": "bring back (verb phrase), original (adjective), recipe (noun)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Bring back</span> the <span class=\"pos\" title=\"POS highlight\">original</span> <span class=\"entity food\" title=\"Food/product entity\">meat pie</span> <span class=\"pos\" title=\"POS highlight\">recipe</span>"}, {"id": 49, "text": "Their spaghetti was really nice", "sentiment": "positive", "emotion": "Satisfaction", "topics": ["Other products", "Product taste/quality"], "entities": {"location": [], "food": ["spaghetti"], "people": []}, "pos": "really (adverb), nice (adjective)", "highlighted": "Their <span class=\"entity food\" title=\"Food/product entity\">spaghetti</span> was <span class=\"pos\" title=\"POS highlight\">really</span> <span class=\"pos\" title=\"POS highlight\">nice</span>"}, {"id": 50, "text": "Do you guys have a Mr Biggs platter. A lil bit of everything", "sentiment": "neutral", "emotion": "Curiosity", "topics": ["Product availability", "Other products"], "entities": {"location": [], "food": ["platter"], "people": ["guys"]}, "pos": "have (verb), lil bit/everything (noun phrases)", "highlighted": "Do you <span class=\"entity person\" title=\"People/person entity\">guys</span> <span class=\"pos\" title=\"POS highlight\">have</span> a Mr Biggs <span class=\"entity food\" title=\"Food/product entity\">platter</span>. A <span class=\"pos\" title=\"POS highlight\">lil bit</span> of <span class=\"pos\" title=\"POS highlight\">everything</span>"}, {"id": 51, "text": "You guys made childhood so fun🥺🥺 some aggressive marketing would help I guess y’all need to get back to where you used to🙏🏾", "sentiment": "mixed", "emotion": "Hope", "topics": ["Nostalgia/childhood memories", "Marketing/brand revival", "Comeback/relaunch hope"], "entities": {"location": [], "food": [], "people": ["guys", "y’all"]}, "pos": "made/help/guess/need/get back (verbs), fun/aggressive (adjectives), marketing/childhood (nouns)", "highlighted": "You <span class=\"entity person\" title=\"People/person entity\">guys</span> <span class=\"pos\" title=\"POS highlight\">made</span> <span class=\"pos\" title=\"POS highlight\">childhood</span> so <span class=\"pos\" title=\"POS highlight\">fun</span>🥺🥺 some <span class=\"pos\" title=\"POS highlight\">aggressive</span> <span class=\"pos\" title=\"POS highlight\">marketing</span> would <span class=\"pos\" title=\"POS highlight\">help</span> I <span class=\"pos\" title=\"POS highlight\">guess</span> <span class=\"entity person\" title=\"People/person entity\">y’all</span> <span class=\"pos\" title=\"POS highlight\">need</span> to <span class=\"pos\" title=\"POS highlight\">get back</span> to <span class=\"pos\" title=\"POS highlight\">where</span> you used to🙏🏾"}, {"id": 52, "text": "Where is my rice 😂", "sentiment": "neutral", "emotion": "Humor", "topics": ["Product request", "Other products"], "entities": {"location": [], "food": ["rice"], "people": []}, "pos": "where (adverb/question word), rice (noun)", "highlighted": "<span class=\"pos\" title=\"POS highlight\">Where</span> is my <span class=\"entity food\" title=\"Food/product entity\">rice</span> 😂"}];
+const chartData = {"sentiments": [{"label": "Positive", "value": 21, "percent": 40.4}, {"label": "Mixed", "value": 20, "percent": 38.5}, {"label": "Negative", "value": 6, "percent": 11.5}, {"label": "Neutral", "value": 5, "percent": 9.6}], "emotions": [{"label": "Nostalgia", "value": 13}, {"label": "Admiration", "value": 6}, {"label": "Hope", "value": 5}, {"label": "Longing", "value": 3}, {"label": "Frustration", "value": 2}, {"label": "Curiosity", "value": 2}, {"label": "Delight", "value": 2}, {"label": "Sadness", "value": 2}, {"label": "Surprise", "value": 2}, {"label": "Satisfaction", "value": 2}, {"label": "Concern", "value": 2}, {"label": "Disappointment", "value": 1}, {"label": "Dissatisfaction", "value": 1}, {"label": "Defensiveness", "value": 1}, {"label": "Affection", "value": 1}, {"label": "Regret", "value": 1}, {"label": "Resignation", "value": 1}, {"label": "Informative", "value": 1}, {"label": "Joy", "value": 1}, {"label": "Excitement", "value": 1}, {"label": "Suggestive", "value": 1}, {"label": "Humor", "value": 1}], "topics": [{"label": "Nostalgia/childhood memories", "value": 25}, {"label": "Meat pie taste/quality", "value": 24}, {"label": "Brand decline/inactivity", "value": 11}, {"label": "Other products", "value": 10}, {"label": "Locations/branches", "value": 6}, {"label": "Product comparison", "value": 5}, {"label": "Competition", "value": 5}, {"label": "Comeback/relaunch hope", "value": 5}, {"label": "Content/video feedback", "value": 3}, {"label": "Franchising/quality consistency", "value": 2}, {"label": "Product taste/quality", "value": 2}, {"label": "General satisfaction", "value": 2}], "foods": [{"label": "meat pie", "value": 24}, {"label": "meal/snacks", "value": 3}, {"label": "general food", "value": 3}, {"label": "potato pie", "value": 2}, {"label": "fried rice", "value": 2}, {"label": "meat (filling)", "value": 1}, {"label": "Sprite", "value": 1}, {"label": "carrot pie", "value": 1}, {"label": "cabbage pie", "value": 1}, {"label": "pastries", "value": 1}, {"label": "dough", "value": 1}, {"label": "scotch egg", "value": 1}]};
+
+function sentimentBadge(sentiment) {
+  return `<span class="badge ${sentiment}">${sentiment}</span>`;
+}
+
+function chips(items, cls) {
+  if (!items || !items.length) return '<span class="chip">None identified</span>';
+  return items.map(item => `<span class="chip entity ${cls}">${escapeHtml(item)}</span>`).join('');
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function renderComments() {
+  const list = document.getElementById('commentList');
+  list.innerHTML = comments.map(c => `
+    <article class="comment-card" data-sentiment="${c.sentiment}" data-emotion="${c.emotion}" data-search="${escapeHtml((c.text + ' ' + c.emotion + ' ' + c.sentiment + ' ' + c.topics.join(' ') + ' ' + Object.values(c.entities).flat().join(' ')).toLowerCase())}">
+      <div class="comment-top">
+        <div class="num">#${c.id}</div>
+        <div>
+          <strong>Comment ${c.id}</strong><br>
+          <span style="color:var(--muted)">Emotion: ${escapeHtml(c.emotion)}</span>
+        </div>
+        <div class="right-badges">${sentimentBadge(c.sentiment)}</div>
+      </div>
+      <div class="comment-body">
+        <div class="quote">${c.highlighted}</div>
+        <div class="meta-grid">
+          <div><div class="small-title">Key topics</div>${c.topics.map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}</div>
+          <div><div class="small-title">POS highlights</div><span class="chip">${escapeHtml(c.pos)}</span></div>
+          <div><div class="small-title">Location entities</div>${chips(c.entities.location, 'location')}</div>
+          <div><div class="small-title">Food/product entities</div>${chips(c.entities.food, 'food')}</div>
+          <div><div class="small-title">People/person entities</div>${chips(c.entities.people, 'person')}</div>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function populateEmotionFilter() {
+  const select = document.getElementById('emotionFilter');
+  [...new Set(comments.map(c => c.emotion))].sort().forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e; opt.textContent = e;
+    select.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const s = document.getElementById('sentimentFilter').value;
+  const e = document.getElementById('emotionFilter').value;
+  let visible = 0;
+  document.querySelectorAll('.comment-card').forEach(card => {
+    const ok = (!q || card.dataset.search.includes(q)) &&
+               (!s || card.dataset.sentiment === s) &&
+               (!e || card.dataset.emotion === e);
+    card.hidden = !ok;
+    if (ok) visible++;
+  });
+  document.getElementById('visibleCount').textContent = visible;
+}
+
+function drawPie() {
+  const canvas = document.getElementById('sentimentPie');
+  const ctx = canvas.getContext('2d');
+  const data = chartData.sentiments;
+  const total = data.reduce((sum,d)=>sum+d.value,0);
+  const colors = ['#22c55e','#f59e0b','#ef4444','#94a3b8'];
+  let start = -Math.PI / 2;
+  const cx = 135, cy = 130, r = 82;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  data.forEach((d, i) => {
+    const angle = (d.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    start += angle;
+  });
+  ctx.fillStyle = '#e5e7eb';
+  ctx.font = 'bold 18px system-ui';
+  ctx.textAlign = 'left';
+  data.forEach((d, i) => {
+    const y = 66 + i * 38;
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(270, y-14, 18, 18);
+    ctx.fillStyle = '#e5e7eb';
+    ctx.fillText(`${d.label}: ${d.value} (${d.percent}%)`, 300, y);
+  });
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '12px system-ui';
+  ctx.fillText('n = ' + total, 300, 220);
+}
+
+function renderBars(containerId, rows, maxRows=12) {
+  const el = document.getElementById(containerId);
+  const max = Math.max(...rows.map(r => r.value), 1);
+  el.innerHTML = rows.slice(0, maxRows).map(r => `
+    <div class="bar-row">
+      <div class="bar-label">${escapeHtml(r.label)}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${(r.value/max*100).toFixed(1)}%"></div></div>
+      <div style="text-align:right;color:#e5e7eb;font-weight:800">${r.value}</div>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderComments();
+  populateEmotionFilter();
+  drawPie();
+  renderBars('emotionBars', chartData.emotions, 20);
+  renderBars('topicBars', chartData.topics, 12);
+  renderBars('foodBars', chartData.foods, 12);
+  ['searchBox','sentimentFilter','emotionFilter'].forEach(id => document.getElementById(id).addEventListener('input', applyFilters));
+  document.getElementById('expandAll').addEventListener('click', () => {
+    document.querySelectorAll('.comment-card').forEach(c => c.scrollIntoView({block:'nearest'}));
+    window.scrollTo({top: document.querySelector('#commentList').offsetTop - 90, behavior:'smooth'});
+  });
+  document.getElementById('printReport').addEventListener('click', () => window.print());
+});
+</script>
+</body>
+</html>
