@@ -53,7 +53,7 @@ Download or clone the repo, then open any of the `.html` files in the `mr-biggs-
 
 An individual follow-up assignment applying a more advanced, corporate-style analysis to **Domino's Pizza**, built from 135 customer comments manually collected across X (Twitter), Facebook, Instagram, YouTube and TikTok.
 
-Unlike the Mr. Biggs project, which compared how different LLMs handle the same prompt, this project is a single, executive-ready deliverable: a full Word document report combining sentiment analysis, emotion analysis, aspect-based sentiment, topic extraction, named entity recognition, complaint/praise categorization, opportunity analysis, and prioritized business recommendations.
+Unlike the Mr. Biggs project, which compared how different LLMs handle the same prompt, this project is a single, executive-ready deliverable: a full Word, PDF and spreadsheet documents report combining sentiment analysis, emotion analysis, aspect-based sentiment, topic extraction, named entity recognition, complaint/praise categorization, opportunity analysis, and prioritized business recommendations.
 
 ### Repo contents
 
